@@ -7,10 +7,40 @@ load_dotenv()
 
 NEPAL_TZ = ZoneInfo("Asia/Kathmandu")
 
+
+def get_database_uri():
+    """Return a production-ready database URI.
+
+    - Prefer DATABASE_URL (Neon / Postgres on Vercel)
+    - Normalize postgres:// → postgresql:// (SQLAlchemy requirement)
+    - Never fall back to SQLite on Vercel (read-only filesystem)
+    """
+    uri = os.environ.get("DATABASE_URL", "").strip()
+    if uri:
+        if uri.startswith("postgres://"):
+            uri = uri.replace("postgres://", "postgresql://", 1)
+        return uri
+
+    # Local development only – Vercel has no writable filesystem for SQLite
+    if os.environ.get("VERCEL"):
+        raise RuntimeError(
+            "DATABASE_URL environment variable is required on Vercel. "
+            "Set it to your Neon Postgres connection string."
+        )
+    return "sqlite:///school.db"
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///school.db")
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Recommended for serverless (Neon / Vercel)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 5,
+        "max_overflow": 10,
+    }
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
     # Mail
