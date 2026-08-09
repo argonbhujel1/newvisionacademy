@@ -452,17 +452,18 @@ def save_local_image(file, folder="uploads"):
 
 
 def upload_or_local(file, folder="newvisionacademy"):
-    """Try Cloudinary first, fall back to local static storage."""
-    if not file or not file.filename:
+    """Try Cloudinary first. On Vercel local disk is read-only so Cloudinary is required."""
+    if not file or not getattr(file, "filename", None):
         return None
     result = upload_image(file, folder=folder)
     if result and result.get("url"):
         return result
-    # local fallback
-    local_folder = folder.replace("newvisionacademy/", "").replace("newvisionacademy", "uploads")
-    url = save_local_image(file, folder=local_folder or "uploads")
-    if url:
-        return {"url": url, "public_id": ""}
+    # Local fallback only works outside Vercel
+    if not os.environ.get("VERCEL"):
+        local_folder = folder.replace("newvisionacademy/", "").replace("newvisionacademy", "uploads")
+        url = save_local_image(file, folder=local_folder or "uploads")
+        if url:
+            return {"url": url, "public_id": ""}
     return None
 
 def generate_application_id():
@@ -1026,11 +1027,14 @@ def admin_slider():
                 sort_order=int(request.form.get("sort_order", 0) or 0),
                 is_active="is_active" in request.form,
             )
-            if "image" in request.files and request.files["image"].filename:
-                result = upload_image(request.files["image"], folder="newvisionacademy/slider")
-                if result:
+            img = request.files.get("image")
+            if img and img.filename:
+                result = upload_image(img, folder="newvisionacademy/slider")
+                if result and result.get("url"):
                     slide.image_url = result["url"]
                     slide.image_public_id = result.get("public_id", "")
+                else:
+                    flash("Slide saved but image upload failed. Check Cloudinary credentials.", "warning")
             db.session.add(slide)
             db.session.commit()
             flash("Slide added.", "success")
@@ -1046,11 +1050,17 @@ def admin_slider():
                 slide.button2_url = request.form.get("button2_url", "")
                 slide.sort_order = int(request.form.get("sort_order", 0) or 0)
                 slide.is_active = "is_active" in request.form
-                if "image" in request.files and request.files["image"].filename:
-                    result = upload_image(request.files["image"], folder="newvisionacademy/slider")
-                    if result:
+                img = request.files.get("image")
+                if img and img.filename:
+                    # delete old image if present
+                    if slide.image_public_id:
+                        delete_image(slide.image_public_id)
+                    result = upload_image(img, folder="newvisionacademy/slider")
+                    if result and result.get("url"):
                         slide.image_url = result["url"]
                         slide.image_public_id = result.get("public_id", "")
+                    else:
+                        flash("Slide updated but image upload failed. Check Cloudinary credentials.", "warning")
                 db.session.commit()
                 flash("Slide updated.", "success")
         elif action == "delete":
