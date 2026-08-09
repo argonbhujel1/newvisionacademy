@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Classes</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">Classes</li></ol></nav></div></section>
+<section class="section"><div class="container">
+<div class="row g-4">
+{% for g in grades %}
+<div class="col-md-6 col-lg-4"><div class="card-modern p-4"><h5>{{ g.name }}</h5><p>{{ g.description or 'Information coming soon.' }}</p></div></div>
+{% else %}<p class="text-center text-muted">Information coming soon.</p>{% endfor %}
+</div></div></section>
+{% endblock %}

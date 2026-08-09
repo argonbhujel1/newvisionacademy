@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Privacy Policy</h1></div></section>
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-8">
+<p>This privacy policy describes how {{ profile.school_name }} collects and uses information submitted through this website, including admission applications and contact forms.</p>
+<p>Personal information provided is used solely for school communication and admission processing. We do not sell or share your data with third parties for marketing purposes.</p>
+<p>For questions, contact us at {% if profile.email %}{{ profile.email }}{% else %}the school office{% endif %}.</p>
+<p class="text-muted small">This policy may be updated by the school administration.</p>
+</div></div></div></section>
+{% endblock %}

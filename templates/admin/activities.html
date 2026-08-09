@@ -1,0 +1,23 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Activities</h4>
+<div class="row g-4">
+<div class="col-lg-4"><div class="stat-card">
+<form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="action" value="add">
+<input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
+<textarea name="description" class="form-control mb-2" rows="2"></textarea>
+<input type="text" name="category" class="form-control mb-2" placeholder="Category" value="General">
+<input type="date" name="activity_date" class="form-control mb-2">
+<input type="number" name="sort_order" class="form-control mb-2" value="0">
+<input type="file" name="image" class="form-control mb-2" accept="image/*">
+<div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="aa"><label for="aa">Active</label></div>
+<button type="submit" class="btn btn-primary btn-sm">Add</button>
+</form></div></div>
+<div class="col-lg-8">
+{% for a in activities %}
+<div class="stat-card mb-2 d-flex justify-content-between"><div><strong>{{ a.title }}</strong> <span class="badge bg-secondary">{{ a.category }}</span></div>
+<form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ a.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+</div>
+{% else %}<p class="text-muted">No activities yet.</p>{% endfor %}
+</div></div>
+{% include "admin/_layout_end.html" %}

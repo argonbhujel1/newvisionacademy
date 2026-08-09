@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Contact Us</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">Contact</li></ol></nav></div></section>
+<section class="section"><div class="container">
+<div class="row g-5">
+<div class="col-lg-5">
+<h3>{{ profile.school_name }}</h3>
+<p class="mb-1"><i class="fas fa-map-marker-alt me-2 text-secondary"></i>{{ profile.address }}</p>
+{% if profile.phone %}<p class="mb-1"><i class="fas fa-phone me-2 text-secondary"></i>{{ profile.phone }}{% if profile.phone2 %} / {{ profile.phone2 }}{% endif %}</p>{% endif %}
+{% if profile.email %}<p class="mb-1"><i class="fas fa-envelope me-2 text-secondary"></i>{{ profile.email }}</p>{% endif %}
+{% if profile.school_code %}<p class="mb-1"><i class="fas fa-id-card me-2 text-secondary"></i>School Code: {{ profile.school_code }}</p>{% endif %}
+<p class="mb-3"><i class="fas fa-clock me-2 text-secondary"></i>{{ profile.office_hours }}</p>
+{% if profile.google_maps %}<div class="rounded overflow-hidden mt-3">{{ profile.google_maps|safe }}</div>{% endif %}
+</div>
+<div class="col-lg-7">
+<div class="card-modern p-4">
+<h4 class="mb-4">Send a Message</h4>
+<form method="POST">
+<div class="row g-3">
+<div class="col-md-6"><label class="form-label">Your Name *</label><input type="text" name="name" class="form-control" required></div>
+<div class="col-md-6"><label class="form-label">Phone</label><input type="tel" name="phone" class="form-control"></div>
+<div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control"></div>
+<div class="col-md-6"><label class="form-label">Subject</label><input type="text" name="subject" class="form-control"></div>
+<div class="col-12"><label class="form-label">Message *</label><textarea name="message" class="form-control" rows="5" required></textarea></div>
+<div class="col-12"><button type="submit" class="btn btn-primary-custom">Send Message</button></div>
+</div>
+</form>
+</div></div></div></div></section>
+{% endblock %}

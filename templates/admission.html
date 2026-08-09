@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Admission</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">Admission</li></ol></nav></div></section>
+<section class="section"><div class="container">
+<div class="row g-5">
+<div class="col-lg-5">
+<h2>Admission {{ profile.admission_session }}</h2>
+<p>Admissions are open for the academic session <strong>{{ profile.admission_session }}</strong> at New Vision Academy, Urlabari-8, Morang.</p>
+<p>Parents and guardians who wish to learn more about admission, available classes, requirements and the admission process are encouraged to contact the school administration or submit the form below.</p>
+<p class="mb-0"><strong>Admission Levels:</strong> ECD / Nursery to Grade 10</p>
+{% if profile.admission_open %}
+<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>Admission is currently <strong>open</strong> for session {{ profile.admission_session }}.</div>
+{% else %}
+<div class="alert alert-warning">Admission is currently closed. Please check back later.</div>
+{% endif %}
+<ul class="list-unstyled mt-4">
+<li class="mb-2"><i class="fas fa-map-marker-alt text-secondary me-2"></i>{{ profile.address }}</li>
+{% if profile.phone %}<li class="mb-2"><i class="fas fa-phone text-secondary me-2"></i>{{ profile.phone }}</li>{% endif %}
+{% if profile.email %}<li class="mb-2"><i class="fas fa-envelope text-secondary me-2"></i>{{ profile.email }}</li>{% endif %}
+<li class="mb-2"><i class="fas fa-clock text-secondary me-2"></i>{{ profile.office_hours }}</li>
+</ul>
+</div>
+<div class="col-lg-7">
+{% if profile.admission_open %}
+<div class="card-modern p-4">
+<h4 class="mb-4">Online Application Form</h4>
+<form method="POST" enctype="multipart/form-data">
+<h6 class="text-secondary mb-3">Student Information</h6>
+<div class="row g-3 mb-4">
+<div class="col-md-6"><label class="form-label">Student Full Name *</label><input type="text" name="student_name" class="form-control" required></div>
+<div class="col-md-6"><label class="form-label">Date of Birth</label><input type="date" name="date_of_birth" class="form-control"></div>
+<div class="col-md-6"><label class="form-label">Gender</label><select name="gender" class="form-select"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+<div class="col-md-6"><label class="form-label">Applying for Grade *</label>
+<select name="applying_grade" class="form-select" required>
+<option value="">Select Grade</option>
+{% for g in grades %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}
+</select></div>
+<div class="col-md-6"><label class="form-label">Previous School</label><input type="text" name="previous_school" class="form-control"></div>
+<div class="col-md-6"><label class="form-label">Previous Grade</label><input type="text" name="previous_grade" class="form-control"></div>
+</div>
+<h6 class="text-secondary mb-3">Parent / Guardian</h6>
+<div class="row g-3 mb-4">
+<div class="col-md-6"><label class="form-label">Parent/Guardian Name *</label><input type="text" name="parent_name" class="form-control" required></div>
+<div class="col-md-6"><label class="form-label">Relationship</label><select name="relationship" class="form-select"><option>Parent</option><option>Guardian</option><option>Other</option></select></div>
+<div class="col-md-6"><label class="form-label">Phone *</label><input type="tel" name="phone" class="form-control" required></div>
+<div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control"></div>
+<div class="col-12"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="2"></textarea></div>
+</div>
+<div class="mb-3"><label class="form-label">Message / Additional Info</label><textarea name="message" class="form-control" rows="3"></textarea></div>
+<div class="mb-4"><label class="form-label">Student Photo (optional)</label><input type="file" name="photo" class="form-control" accept="image/*"></div>
+<button type="submit" class="btn btn-cta btn-lg">Submit Application</button>
+<p class="small text-muted mt-3">Submitting this form does not guarantee admission. The school will review and contact you.</p>
+</form>
+</div>
+{% else %}
+<div class="card-modern p-5 text-center"><p class="lead">Online applications are currently closed.</p><a href="{{ url_for('contact') }}" class="btn btn-primary-custom">Contact the School</a></div>
+{% endif %}
+</div></div></div></section>
+{% endblock %}

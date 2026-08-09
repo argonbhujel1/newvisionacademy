@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Events</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">Events</li></ol></nav></div></section>
+<section class="section"><div class="container">
+<div class="row g-4">
+{% for e in events %}
+<div class="col-md-6 col-lg-4">
+<div class="card-modern h-100">
+{% if e.image_url %}<img src="{{ e.image_url }}" class="card-img-top" alt="{{ e.name }}" loading="lazy">{% endif %}
+<div class="p-3">
+<span class="badge bg-{% if e.status=='upcoming' %}success{% elif e.status=='completed' %}secondary{% else %}warning{% endif %} mb-2">{{ e.status }}</span>
+<h5>{{ e.name }}</h5>
+{% if e.event_date %}<p class="small text-muted mb-1"><i class="far fa-calendar me-1"></i>{{ e.event_date.strftime('%d %B %Y') }}
+{% if e.start_time %} · {{ e.start_time }}{% if e.end_time %} – {{ e.end_time }}{% endif %}{% endif %}</p>{% endif %}
+{% if e.venue %}<p class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ e.venue }}</p>{% endif %}
+<p class="small">{{ e.description[:150] if e.description else '' }}</p>
+</div></div></div>
+{% else %}<p class="text-center text-muted">No events scheduled at this time.</p>{% endfor %}
+</div></div></section>
+{% endblock %}

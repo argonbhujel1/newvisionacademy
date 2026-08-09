@@ -1,0 +1,25 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">News</h4>
+<div class="row g-4">
+<div class="col-lg-5"><div class="stat-card">
+<form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="action" value="add">
+<input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
+<textarea name="excerpt" class="form-control mb-2" placeholder="Excerpt" rows="2"></textarea>
+<textarea name="content" class="form-control mb-2" placeholder="Content" rows="5"></textarea>
+<input type="text" name="category" class="form-control mb-2" value="General">
+<input type="text" name="author" class="form-control mb-2" value="Admin">
+<select name="status" class="form-select mb-2"><option value="draft">Draft</option><option value="published">Published</option></select>
+<input type="file" name="cover" class="form-control mb-2" accept="image/*">
+<div class="form-check mb-2"><input type="checkbox" name="is_featured" class="form-check-input" id="nf"><label for="nf">Featured</label></div>
+<button type="submit" class="btn btn-primary btn-sm">Create News</button>
+</form></div></div>
+<div class="col-lg-7">
+{% for n in news_list %}
+<div class="stat-card mb-2 d-flex justify-content-between align-items-center">
+<div><strong>{{ n.title }}</strong><br><small class="text-muted">{{ n.status }} · {{ format_date(n.created_at) }}</small></div>
+<form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ n.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+</div>
+{% else %}<p class="text-muted">No news yet.</p>{% endfor %}
+</div></div>
+{% include "admin/_layout_end.html" %}

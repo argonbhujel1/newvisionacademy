@@ -1,0 +1,43 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">General Settings</h4>
+<form method="POST" enctype="multipart/form-data">
+<div class="row g-3">
+<div class="col-md-6"><label class="form-label">School Name</label><input type="text" name="school_name" class="form-control" value="{{ profile.school_name }}"></div>
+<div class="col-md-6"><label class="form-label">Short Name</label><input type="text" name="short_name" class="form-control" value="{{ profile.short_name }}"></div>
+<div class="col-12"><label class="form-label">Address</label><input type="text" name="address" class="form-control" value="{{ profile.address }}"></div>
+<div class="col-md-4"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control" value="{{ profile.phone }}"></div>
+<div class="col-md-4"><label class="form-label">Phone 2</label><input type="text" name="phone2" class="form-control" value="{{ profile.phone2 }}"></div>
+<div class="col-md-4"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ profile.email }}"></div>
+<div class="col-md-6"><label class="form-label">Website</label><input type="text" name="website" class="form-control" value="{{ profile.website }}"></div>
+<div class="col-md-6"><label class="form-label">Admission Session</label><input type="text" name="admission_session" class="form-control" value="{{ profile.admission_session }}"></div>
+<div class="col-md-4"><label class="form-label">Student Count</label><input type="text" name="student_count" class="form-control" value="{{ profile.student_count }}"></div>
+<div class="col-md-4"><label class="form-label">Teacher Count</label><input type="text" name="teacher_count" class="form-control" value="{{ profile.teacher_count }}"></div>
+<div class="col-md-4"><label class="form-label">Grades Text</label><input type="text" name="grades_text" class="form-control" value="{{ profile.grades_text }}"></div>
+<div class="col-md-6"><label class="form-label">Office Hours</label><input type="text" name="office_hours" class="form-control" value="{{ profile.office_hours }}"></div>
+<div class="col-md-6"><label class="form-label">School Type</label><input type="text" name="school_type" class="form-control" value="{{ profile.school_type }}"></div>
+<div class="col-md-4"><label class="form-label">School Code</label><input type="text" name="school_code" class="form-control" value="{{ profile.school_code }}"></div>
+<div class="col-md-4"><label class="form-label">Municipality</label><input type="text" name="municipality" class="form-control" value="{{ profile.municipality }}"></div>
+<div class="col-md-4"><label class="form-label">District</label><input type="text" name="district" class="form-control" value="{{ profile.district }}"></div>
+<div class="col-md-4"><label class="form-label">Province</label><input type="text" name="province" class="form-control" value="{{ profile.province }}"></div>
+<div class="col-md-4"><label class="form-label">Country</label><input type="text" name="country" class="form-control" value="{{ profile.country }}"></div>
+<div class="col-md-6"><label class="form-label">Established Year</label><input type="text" name="established_year" class="form-control" value="{{ profile.established_year }}"></div>
+<div class="col-md-3"><label class="form-label">Motto</label><input type="text" name="motto" class="form-control" value="{{ profile.motto }}"></div>
+<div class="col-12"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="3">{{ profile.description }}</textarea></div>
+<div class="col-md-3"><label class="form-label">Facebook</label><input type="text" name="facebook" class="form-control" value="{{ profile.facebook }}"></div>
+<div class="col-md-3"><label class="form-label">Instagram</label><input type="text" name="instagram" class="form-control" value="{{ profile.instagram }}"></div>
+<div class="col-md-3"><label class="form-label">YouTube</label><input type="text" name="youtube" class="form-control" value="{{ profile.youtube }}"></div>
+<div class="col-md-3"><label class="form-label">TikTok</label><input type="text" name="tiktok" class="form-control" value="{{ profile.tiktok }}"></div>
+<div class="col-12"><label class="form-label">Google Maps Embed HTML</label><textarea name="google_maps" class="form-control" rows="2">{{ profile.google_maps }}</textarea></div>
+<div class="col-md-3"><label class="form-label">Primary Color</label><input type="color" name="theme_primary" class="form-control form-control-color" value="{{ profile.theme_primary }}"></div>
+<div class="col-md-3"><label class="form-label">Secondary</label><input type="color" name="theme_secondary" class="form-control form-control-color" value="{{ profile.theme_secondary }}"></div>
+<div class="col-md-3"><label class="form-label">Accent</label><input type="color" name="theme_accent" class="form-control form-control-color" value="{{ profile.theme_accent }}"></div>
+<div class="col-md-3"><label class="form-label">CTA Color</label><input type="color" name="theme_cta" class="form-control form-control-color" value="{{ profile.theme_cta }}"></div>
+<div class="col-md-6"><label class="form-label">Logo</label><input type="file" name="logo" class="form-control" accept="image/*">{% if profile.logo_url %}<img src="{{ profile.logo_url }}" height="40" class="mt-1">{% endif %}</div>
+<div class="col-md-6"><label class="form-label">Favicon</label><input type="file" name="favicon" class="form-control" accept="image/*"></div>
+<div class="col-md-6"><div class="form-check mt-4"><input type="checkbox" name="admission_open" class="form-check-input" id="ao" {% if profile.admission_open %}checked{% endif %}><label class="form-check-label" for="ao">Admission Open</label></div></div>
+<div class="col-md-6"><div class="form-check mt-4"><input type="checkbox" name="auto_reply_enabled" class="form-check-input" id="ar" {% if profile.auto_reply_enabled %}checked{% endif %}><label class="form-check-label" for="ar">Auto-reply Emails</label></div></div>
+<div class="col-12"><label class="form-label">Copyright Text</label><input type="text" name="copyright_text" class="form-control" value="{{ profile.copyright_text }}"></div>
+<div class="col-12"><button type="submit" class="btn btn-primary">Save Settings</button></div>
+</div>
+</form>
+{% include "admin/_layout_end.html" %}

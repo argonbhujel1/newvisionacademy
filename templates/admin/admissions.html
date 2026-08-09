@@ -1,0 +1,32 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Admission Applications</h4>
+<div class="table-responsive">
+<table class="table table-hover bg-white rounded">
+<thead><tr><th>ID</th><th>Student</th><th>Grade</th><th>Parent</th><th>Phone</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+<tbody>
+{% for a in applications %}
+<tr>
+<td><small>{{ a.application_id }}</small></td>
+<td>{{ a.student_name }}</td>
+<td>{{ a.applying_grade }}</td>
+<td>{{ a.parent_name }}</td>
+<td>{{ a.phone }}</td>
+<td><span class="badge bg-{% if a.status=='New' %}danger{% elif a.status=='Approved' %}success{% else %}secondary{% endif %}">{{ a.status }}</span></td>
+<td><small>{{ format_date(a.created_at) }}</small></td>
+<td>
+<form method="POST" class="d-flex gap-1">
+<input type="hidden" name="action" value="update_status">
+<input type="hidden" name="id" value="{{ a.id }}">
+<select name="status" class="form-select form-select-sm" style="width:auto">
+{% for s in ['New','Under Review','Contacted','Approved','Rejected','Completed'] %}
+<option value="{{ s }}" {% if a.status==s %}selected{% endif %}>{{ s }}</option>
+{% endfor %}
+</select>
+<button class="btn btn-sm btn-primary">Update</button>
+</form>
+</td>
+</tr>
+{% else %}<tr><td colspan="8" class="text-muted text-center">No applications yet.</td></tr>{% endfor %}
+</tbody></table>
+</div>
+{% include "admin/_layout_end.html" %}

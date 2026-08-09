@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if seo and seo.title %}{{ seo.title }}{% else %}{{ profile.school_name }} – Urlabari-8, Morang{% endif %}</title>
+  <meta name="description" content="{% if seo and seo.meta_description %}{{ seo.meta_description }}{% else %}New Vision Academy is a private co-educational English-medium school in Urlabari-8, Morang, offering education from ECD/Nursery to Grade 10.{% endif %}">
+  <link rel="canonical" href="{% if seo and seo.canonical_url %}{{ seo.canonical_url }}{% else %}{{ request.url }}{% endif %}">
+  <meta property="og:title" content="{% if seo and seo.og_title %}{{ seo.og_title }}{% elif seo and seo.title %}{{ seo.title }}{% else %}{{ profile.school_name }}{% endif %}">
+  <meta property="og:description" content="{% if seo and seo.og_description %}{{ seo.og_description }}{% elif seo and seo.meta_description %}{{ seo.meta_description }}{% else %}Private English Medium School | ECD to Grade 10{% endif %}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{ request.url }}">
+  {% if seo and seo.og_image %}<meta property="og:image" content="{{ seo.og_image }}">{% endif %}
+  <meta name="twitter:card" content="summary_large_image">
+  {% if profile.favicon_url %}<link rel="icon" href="{{ profile.favicon_url }}">{% endif %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    :root {
+      --primary: {{ profile.theme_primary or '#0a2540' }};
+      --secondary: {{ profile.theme_secondary or '#1e4d8c' }};
+      --accent: {{ profile.theme_accent or '#c9a227' }};
+      --cta: {{ profile.theme_cta or '#c41e3a' }};
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "School",
+    "name": "{{ profile.school_name }}",
+    "url": "{{ profile.website or request.url_root }}",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Urlabari",
+      "addressRegion": "Morang",
+      "addressCountry": "NP",
+      "streetAddress": "{{ profile.address }}"
+    }{% if profile.phone %},
+    "telephone": "{{ profile.phone }}"{% endif %}{% if profile.email %},
+    "email": "{{ profile.email }}"{% endif %}
+  }
+  </script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <!-- Top Bar -->
+  <div class="top-bar d-none d-md-block">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center py-1">
+        <div class="top-info">
+          {% if profile.phone %}<span class="me-3"><i class="fas fa-phone-alt"></i> {{ profile.phone }}</span>{% endif %}
+          {% if profile.email %}<span class="me-3"><i class="fas fa-envelope"></i> {{ profile.email }}</span>{% endif %}
+          <span><i class="fas fa-map-marker-alt"></i> {{ profile.address }}</span>
+        </div>
+        <div class="top-right d-flex align-items-center gap-3">
+          {% if profile.admission_open %}
+          <span class="badge admission-badge"><i class="fas fa-graduation-cap me-1"></i> Admission Open {{ profile.admission_session }}</span>
+          {% endif %}
+          <div class="social-top">
+            {% if profile.facebook %}<a href="{{ profile.facebook }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>{% endif %}
+            {% if profile.instagram %}<a href="{{ profile.instagram }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>{% endif %}
+            {% if profile.youtube %}<a href="{{ profile.youtube }}" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a>{% endif %}
+            {% if profile.tiktok %}<a href="{{ profile.tiktok }}" target="_blank" rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="main-header sticky-top">
+    <nav class="navbar navbar-expand-lg">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+          {% if profile.logo_url %}
+          <img src="{{ profile.logo_url }}" alt="{{ profile.school_name }}" class="logo-img me-2" height="50">
+          {% else %}
+          <div class="logo-placeholder me-2"><i class="fas fa-graduation-cap"></i></div>
+          {% endif %}
+          <div class="brand-text">
+            <span class="brand-name">{{ profile.school_name }}</span>
+            <span class="brand-tagline d-none d-sm-block">{{ profile.short_name }} · Urlabari, Morang</span>
+          </div>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Menu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center">
+            {% for item in nav_items if not item.is_cta %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.path == item.url %}active{% endif %}" href="{{ item.url }}">{{ item.title }}</a>
+            </li>
+            {% endfor %}
+            {% for item in nav_items if item.is_cta %}
+            <li class="nav-item ms-lg-2">
+              <a class="btn btn-cta" href="{{ item.url }}">{{ item.title }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Mobile Offcanvas -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileMenu">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">{{ profile.school_name }}</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul class="navbar-nav">
+        {% for item in nav_items %}
+        <li class="nav-item">
+          <a class="nav-link {% if item.is_cta %}btn btn-cta mt-2{% endif %}" href="{{ item.url }}" data-bs-dismiss="offcanvas">{{ item.title }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Notice Ticker -->
+  {% if notices_ticker and ticker_setting and ticker_setting.is_enabled %}
+  <div class="notice-ticker">
+    <div class="container">
+      <div class="ticker-wrap">
+        <span class="ticker-label"><i class="fas fa-bullhorn"></i> Notices</span>
+        <div class="ticker-track" style="--ticker-speed: {{ ticker_setting.speed or 40 }}s">
+          <div class="ticker-content">
+            {% for n in notices_ticker %}
+            <a href="{{ url_for('notice_detail', notice_id=n.id) }}">
+              {% if n.is_important %}<span class="badge bg-danger me-1">Important</span>{% endif %}
+              {{ n.title }}
+            </a>
+            <span class="ticker-sep">•</span>
+            {% endfor %}
+            {% for n in notices_ticker %}
+            <a href="{{ url_for('notice_detail', notice_id=n.id) }}">
+              {% if n.is_important %}<span class="badge bg-danger me-1">Important</span>{% endif %}
+              {{ n.title }}
+            </a>
+            <span class="ticker-sep">•</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="container mt-3">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="row g-4 py-5">
+        <div class="col-lg-4">
+          <h5 class="footer-brand">{{ profile.school_name }}</h5>
+          <p class="footer-desc">{{ profile.motto or 'Building Knowledge. Character. Confidence.' }}</p>
+          <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ profile.address }}</p>
+          {% if profile.phone %}<p class="mb-1"><i class="fas fa-phone me-2"></i>{{ profile.phone }}</p>{% endif %}
+          {% if profile.email %}<p class="mb-1"><i class="fas fa-envelope me-2"></i>{{ profile.email }}</p>{% endif %}
+          <div class="footer-social mt-3">
+            {% if profile.facebook %}<a href="{{ profile.facebook }}" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>{% endif %}
+            {% if profile.instagram %}<a href="{{ profile.instagram }}" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>{% endif %}
+            {% if profile.youtube %}<a href="{{ profile.youtube }}" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>{% endif %}
+            {% if profile.tiktok %}<a href="{{ profile.tiktok }}" target="_blank" rel="noopener"><i class="fab fa-tiktok"></i></a>{% endif %}
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <h6 class="footer-title">Quick Links</h6>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('about') }}">About</a></li>
+            <li><a href="{{ url_for('academics') }}">Academics</a></li>
+            <li><a href="{{ url_for('admission') }}">Admission</a></li>
+            <li><a href="{{ url_for('gallery') }}">Gallery</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-lg-2">
+          <h6 class="footer-title">Resources</h6>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('news') }}">News</a></li>
+            <li><a href="{{ url_for('notices') }}">Notice Board</a></li>
+            <li><a href="{{ url_for('events') }}">Events</a></li>
+            <li><a href="{{ url_for('downloads') }}">Downloads</a></li>
+            <li><a href="{{ url_for('faq') }}">FAQ</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-4">
+          <h6 class="footer-title">Contact</h6>
+          <p>{{ profile.office_hours }}</p>
+          {% if profile.google_maps %}
+          <div class="footer-map">
+            {{ profile.google_maps|safe }}
+          </div>
+          {% endif %}
+          <a href="{{ url_for('contact') }}" class="btn btn-outline-light btn-sm mt-2">Contact Us</a>
+        </div>
+      </div>
+      <div class="footer-bottom py-3 border-top border-secondary">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <p class="mb-0 small">{{ profile.copyright_text.replace('{{year}}', current_year|string) if profile.copyright_text else '© ' ~ current_year ~ ' New Vision Academy. All rights reserved.' }}</p>
+          <div class="small">
+            <a href="{{ url_for('privacy') }}" class="text-decoration-none me-3">Privacy</a>
+            <a href="{{ url_for('terms') }}" class="text-decoration-none">Terms</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

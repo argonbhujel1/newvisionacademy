@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>{{ notice.title }}</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('notices') }}">Notices</a></li><li class="breadcrumb-item active">Detail</li></ol></nav></div></section>
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-8">
+{% if notice.is_important %}<span class="badge bg-danger mb-2">Important</span>{% endif %}
+<p class="text-muted">{{ format_date(notice.published_at) }} · {{ notice.category }}</p>
+<div>{{ notice.description|safe }}</div>
+{% if notice.external_url %}<p class="mt-3"><a href="{{ notice.external_url }}" target="_blank" rel="noopener">External link →</a></p>{% endif %}
+{% if notice.pdf_url %}<p class="mt-2"><a href="{{ notice.pdf_url }}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-file-pdf me-1"></i> Download PDF</a></p>{% endif %}
+<a href="{{ url_for('notices') }}" class="btn btn-outline-secondary mt-4">← All Notices</a>
+</div></div></div></section>
+{% endblock %}

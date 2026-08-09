@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Hero Slider -->
+{% if not sections or sections.get('hero', {}).is_enabled != False %}
+<section class="hero-slider">
+  {% for slide in slides %}
+  <div class="hero-slide {% if loop.first %}active{% endif %}"
+       style="background-image: url('{{ slide.image_url or 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1600' }}');">
+    <div class="hero-overlay" style="opacity: {{ slide.overlay_opacity or 0.6 }}"></div>
+    <div class="container hero-content">
+      <div class="col-lg-8">
+        {% if slide.title %}<h1>{{ slide.title }}</h1>{% endif %}
+        {% if slide.subtitle %}<p class="subtitle">{{ slide.subtitle }}</p>{% endif %}
+        {% if slide.description %}<p>{{ slide.description }}</p>{% endif %}
+        <div class="hero-btns">
+          {% if slide.button1_text %}
+          <a href="{{ slide.button1_url or '#' }}" class="btn btn-hero-primary">{{ slide.button1_text }}</a>
+          {% endif %}
+          {% if slide.button2_text %}
+          <a href="{{ slide.button2_url or '#' }}" class="btn btn-hero-outline">{{ slide.button2_text }}</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1600');">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+      <div class="col-lg-8">
+        <h1>NEW VISION ACADEMY</h1>
+        <p class="subtitle">Building Knowledge. Character. Confidence.</p>
+        <p>A caring English-medium learning environment for students from ECD/Nursery to Grade 10.</p>
+        <div class="hero-btns">
+          <a href="{{ url_for('about') }}" class="btn btn-hero-primary">Explore Our School</a>
+          <a href="{{ url_for('admission') }}" class="btn btn-hero-outline">Admission Open</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% if slides|length > 1 %}
+  <div class="hero-dots">
+    {% for slide in slides %}
+    <button class="hero-dot {% if loop.first %}active{% endif %}" aria-label="Slide {{ loop.index }}"></button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<!-- Stats -->
+{% if not sections or sections.get('stats', {}).is_enabled != False %}
+<section class="stats-bar">
+  <div class="container">
+    <div class="row">
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-value">ECD – 10</div>
+        <div class="stat-label">Academic Levels</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-value">{{ profile.student_count or '228' }}+</div>
+        <div class="stat-label">Students</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-value">Co-Ed</div>
+        <div class="stat-label">Day School</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-value">Private</div>
+        <div class="stat-label">Institution</div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- About -->
+{% if not sections or sections.get('about', {}).is_enabled != False %}
+<section class="section">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <div class="section-header text-start mb-4">
+          <span class="eyebrow">Welcome</span>
+          <h2>About {{ profile.school_name }}</h2>
+        </div>
+        <p>{{ (profile.description.split('\n\n')[0] if profile.description else '') }}</p>
+        {% if profile.motto %}<p class="fw-semibold text-secondary mt-3"><em>"{{ profile.motto }}"</em></p>{% endif %}
+        <a href="{{ url_for('about') }}" class="btn btn-primary-custom mt-3">Learn More About Us</a>
+      </div>
+      <div class="col-lg-6">
+        {% if profile.about_image_url %}
+        <div class="rounded overflow-hidden shadow mb-3">
+          <img src="{{ profile.about_image_url }}" alt="About {{ profile.school_name }}" class="w-100" style="max-height:320px;object-fit:cover" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="card-modern p-4 text-center h-100">
+              <div class="card-icon mx-auto"><i class="fas fa-book-open"></i></div>
+              <h5>Quality Education</h5>
+              <p class="small text-muted mb-0">English-medium learning from ECD to Grade 10</p>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card-modern p-4 text-center h-100">
+              <div class="card-icon mx-auto"><i class="fas fa-users"></i></div>
+              <h5>Co-Educational</h5>
+              <p class="small text-muted mb-0">Inclusive environment for all students</p>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card-modern p-4 text-center h-100">
+              <div class="card-icon mx-auto"><i class="fas fa-heart"></i></div>
+              <h5>Caring Environment</h5>
+              <p class="small text-muted mb-0">Focused on character and confidence</p>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card-modern p-4 text-center h-100">
+              <div class="card-icon mx-auto"><i class="fas fa-map-marker-alt"></i></div>
+              <h5>Urlabari, Morang</h5>
+              <p class="small text-muted mb-0">Serving the local community</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Principal -->
+{% if principal and (not sections or sections.get('principal', {}).is_enabled != False) %}
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Leadership</span>
+      <h2>Message from the Principal</h2>
+    </div>
+    <div class="principal-card mx-auto" style="max-width: 900px;">
+      {% if principal.photo_url %}
+      <img src="{{ principal.photo_url }}" alt="{{ principal.name or 'Principal' }}" class="principal-photo" loading="lazy">
+      {% else %}
+      <div class="principal-photo-placeholder"><i class="fas fa-user-tie"></i></div>
+      {% endif %}
+      <div>
+        {% if principal.name %}<h4 class="mb-1">{{ principal.name }}</h4>{% endif %}
+        <p class="text-muted mb-3">{{ principal.designation or 'Principal' }}</p>
+        <p>{{ principal.short_message or principal.full_message or 'Information coming soon.' }}</p>
+        {% if principal.full_message and principal.short_message %}
+        <a href="{{ url_for('principal_page') }}" class="btn btn-sm btn-outline-primary mt-2">Read More</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Why Choose -->
+{% if not sections or sections.get('why_choose', {}).is_enabled != False %}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Why Us</span>
+      <h2>Why Choose {{ profile.school_name }}</h2>
+      <p>{{ profile.why_choose_us if profile.why_choose_us and profile.why_choose_us != 'Information coming soon.' else 'A supportive learning environment focused on knowledge, character and confidence.' }}</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="why-item">
+          <div class="icon-wrap"><i class="fas fa-graduation-cap"></i></div>
+          <h5>Academic Foundation</h5>
+          <p class="text-muted small">Structured learning from early childhood through Grade 10.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="why-item">
+          <div class="icon-wrap"><i class="fas fa-hands-helping"></i></div>
+          <h5>Caring Teachers</h5>
+          <p class="text-muted small">Dedicated staff committed to each student's growth.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="why-item">
+          <div class="icon-wrap"><i class="fas fa-star"></i></div>
+          <h5>Holistic Development</h5>
+          <p class="text-muted small">Balance of academics, activities and character building.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Academics -->
+{% if grades and (not sections or sections.get('academics', {}).is_enabled != False) %}
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Learning</span>
+      <h2>Academic Programs</h2>
+      <p>Education from ECD/Nursery through Grade 10</p>
+    </div>
+    <div class="row g-3 justify-content-center">
+      {% for g in grades[:8] %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="card-modern p-3 text-center">
+          <i class="fas fa-book text-secondary mb-2" style="font-size:1.5rem"></i>
+          <h6 class="mb-0">{{ g.name }}</h6>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="{{ url_for('academics') }}" class="btn btn-primary-custom">View All Programs</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Facilities -->
+{% if facilities and (not sections or sections.get('facilities', {}).is_enabled != False) %}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Campus</span>
+      <h2>Our Facilities</h2>
+    </div>
+    <div class="row g-4">
+      {% for f in facilities %}
+      <div class="col-md-6 col-lg-3 animate-on-scroll">
+        <div class="card-modern p-4 h-100">
+          <div class="card-icon"><i class="fas {{ f.icon or 'fa-building' }}"></i></div>
+          <h5>{{ f.title }}</h5>
+          <p class="text-muted small mb-0">{{ f.description }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="{{ url_for('facilities') }}" class="btn btn-primary-custom">All Facilities</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Activities -->
+{% if activities and (not sections or sections.get('activities', {}).is_enabled != False) %}
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Beyond Classroom</span>
+      <h2>Activities & Programs</h2>
+    </div>
+    <div class="row g-4">
+      {% for a in activities %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card-modern">
+          {% if a.image_url %}
+          <img src="{{ a.image_url }}" class="card-img-top" alt="{{ a.title }}" loading="lazy">
+          {% endif %}
+          <div class="card-body p-3">
+            <span class="badge bg-secondary mb-2">{{ a.category }}</span>
+            <h5>{{ a.title }}</h5>
+            <p class="text-muted small">{{ a.description[:120] }}{% if a.description|length > 120 %}...{% endif %}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="{{ url_for('activities') }}" class="btn btn-primary-custom">View Activities</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Teachers -->
+{% if teachers and (not sections or sections.get('teachers', {}).is_enabled != False) %}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Our Team</span>
+      <h2>Featured Teachers</h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% for t in teachers %}
+      <div class="col-6 col-md-4 col-lg-3 animate-on-scroll">
+        <div class="card-modern teacher-card teacher-hover">
+          {% if t.photo_url %}
+          <img src="{{ t.photo_url }}" alt="{{ t.full_name }}" class="teacher-photo" loading="lazy">
+          {% else %}
+          <div class="teacher-photo-placeholder"><i class="fas fa-user"></i></div>
+          {% endif %}
+          <h6 class="mb-1">{{ t.full_name }}</h6>
+          <p class="text-muted small mb-0">{{ t.position }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="{{ url_for('teachers') }}" class="btn btn-primary-custom">All Teachers</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- News -->
+{% if news_list and (not sections or sections.get('news', {}).is_enabled != False) %}
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Updates</span>
+      <h2>Latest News</h2>
+    </div>
+    <div class="row g-4">
+      {% for n in news_list %}
+      <div class="col-md-4">
+        <div class="card-modern news-card">
+          {% if n.cover_image %}
+          <img src="{{ n.cover_image }}" class="card-img-top" alt="{{ n.title }}" loading="lazy">
+          {% endif %}
+          <div class="card-body">
+            <div class="news-meta">
+              <i class="far fa-calendar me-1"></i>{{ format_date(n.published_at) }}
+              {% if n.category %}<span class="ms-2">{{ n.category }}</span>{% endif %}
+            </div>
+            <h5><a href="{{ url_for('news_detail', slug=n.slug) }}">{{ n.title }}</a></h5>
+            <p class="text-muted small">{{ n.excerpt or (n.content[:100] ~ '...') }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="{{ url_for('news') }}" class="btn btn-primary-custom">View All News</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Notices & Events -->
+{% if (notices or events) and (not sections or sections.get('notices', {}).is_enabled != False or sections.get('events', {}).is_enabled != False) %}
+<section class="section">
+  <div class="container">
+    <div class="row g-4">
+      {% if notices %}
+      <div class="col-lg-6">
+        <div class="section-header text-start mb-4">
+          <span class="eyebrow">Notice Board</span>
+          <h2>Latest Notices</h2>
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for n in notices %}
+          <li class="list-group-item d-flex justify-content-between align-items-start px-0">
+            <div>
+              {% if n.is_important %}<span class="badge bg-danger me-1">Important</span>{% endif %}
+              <a href="{{ url_for('notice_detail', notice_id=n.id) }}" class="fw-medium text-decoration-none">{{ n.title }}</a>
+              <div class="small text-muted">{{ format_date(n.published_at) }}</div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        <a href="{{ url_for('notices') }}" class="btn btn-sm btn-outline-primary mt-3">All Notices</a>
+      </div>
+      {% endif %}
+      {% if events %}
+      <div class="col-lg-6">
+        <div class="section-header text-start mb-4">
+          <span class="eyebrow">Calendar</span>
+          <h2>Upcoming Events</h2>
+        </div>
+        {% for e in events %}
+        <div class="card-modern p-3 mb-3">
+          <div class="d-flex gap-3">
+            <div class="text-center bg-light rounded p-2" style="min-width:60px">
+              <div class="fw-bold text-secondary">{{ e.event_date.strftime('%d') if e.event_date else '—' }}</div>
+              <div class="small">{{ e.event_date.strftime('%b') if e.event_date else '' }}</div>
+            </div>
+            <div>
+              <h6 class="mb-1">{{ e.name }}</h6>
+              {% if e.venue %}<div class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ e.venue }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <a href="{{ url_for('events') }}" class="btn btn-sm btn-outline-primary">All Events</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Gallery -->
+{% if gallery and (not sections or sections.get('gallery', {}).is_enabled != False) %}
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Moments</span>
+      <h2>School Gallery</h2>
+    </div>
+    <div class="gallery-grid">
+      {% for img in gallery %}
+      <div class="gallery-item">
+        <img src="{{ img.image_url }}" alt="{{ img.title or 'Gallery' }}" loading="lazy">
+        <div class="overlay"><span>{{ img.title or img.category }}</span></div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-4">
+      <a href="{{ url_for('gallery') }}" class="btn btn-primary-custom">View Full Gallery</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Admission CTA -->
+{% if profile.admission_open and (not sections or sections.get('admission_cta', {}).is_enabled != False) %}
+<section class="admission-cta">
+  <div class="container">
+    <h2>Admission Open — {{ profile.admission_session }}</h2>
+    <p class="lead mb-0">Give your child a strong foundation for the future at {{ profile.school_name }}.</p>
+    <a href="{{ url_for('admission') }}" class="btn">Apply Now</a>
+  </div>
+</section>
+{% endif %}
+
+<!-- Contact strip -->
+{% if not sections or sections.get('contact_map', {}).is_enabled != False %}
+<section class="section">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-6">
+        <div class="section-header text-start mb-3">
+          <span class="eyebrow">Get in Touch</span>
+          <h2>Visit or Contact Us</h2>
+        </div>
+        <p><i class="fas fa-map-marker-alt me-2 text-secondary"></i>{{ profile.address }}</p>
+        {% if profile.phone %}<p><i class="fas fa-phone me-2 text-secondary"></i>{{ profile.phone }}</p>{% endif %}
+        {% if profile.email %}<p><i class="fas fa-envelope me-2 text-secondary"></i>{{ profile.email }}</p>{% endif %}
+        <p><i class="fas fa-clock me-2 text-secondary"></i>{{ profile.office_hours }}</p>
+        <a href="{{ url_for('contact') }}" class="btn btn-primary-custom">Send a Message</a>
+      </div>
+      <div class="col-lg-6">
+        {% if profile.google_maps %}
+        <div class="rounded overflow-hidden shadow">{{ profile.google_maps|safe }}</div>
+        {% else %}
+        <div class="bg-light rounded p-5 text-center text-muted">
+          <i class="fas fa-map fa-3x mb-3"></i>
+          <p>Map will appear here once configured in Admin Settings.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

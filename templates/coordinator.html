@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Vice Principal's Message</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb justify-content-center">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Vice Principal</li>
+      </ol>
+    </nav>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    {% if coordinator %}
+    <div class="principal-card mx-auto" style="max-width:900px">
+      {% if coordinator.photo_url %}
+      <img src="{{ coordinator.photo_url }}" alt="{{ coordinator.name }}" class="principal-photo"
+           onerror="this.style.display='none'">
+      {% else %}
+      <div class="principal-photo-placeholder"><i class="fas fa-user"></i></div>
+      {% endif %}
+      <div>
+        {% if coordinator.name %}<h3>{{ coordinator.name }}</h3>{% endif %}
+        <p class="text-muted">{{ coordinator.designation or 'Vice Principal' }}</p>
+        {% for para in (coordinator.message or '').replace('\\n', '\n').split('\n') %}
+        {% if para.strip() %}<p>{{ para.strip() }}</p>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <p class="text-center">A message from the Vice Principal will be published here.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

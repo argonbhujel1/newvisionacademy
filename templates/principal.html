@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Principal's Message</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb justify-content-center">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Principal</li>
+      </ol>
+    </nav>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    {% if principal %}
+    <div class="principal-card mx-auto" style="max-width:900px">
+      {% if principal.photo_url %}
+      <img src="{{ principal.photo_url }}" alt="{{ principal.name }}" class="principal-photo"
+           onerror="this.style.display='none'">
+      {% else %}
+      <div class="principal-photo-placeholder"><i class="fas fa-user-tie"></i></div>
+      {% endif %}
+      <div>
+        {% if principal.name %}<h3>{{ principal.name }}</h3>{% endif %}
+        <p class="text-muted">{{ principal.designation or 'Principal' }}</p>
+        {% for para in (principal.full_message or principal.short_message or '').replace('\\n', '\n').split('\n') %}
+        {% if para.strip() %}<p>{{ para.strip() }}</p>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <p class="text-center">A message from the Principal will be published here.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

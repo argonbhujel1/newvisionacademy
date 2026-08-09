@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Notice Board</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">Notices</li></ol></nav></div></section>
+<section class="section"><div class="container">
+{% for n in notices %}
+<div class="card-modern p-4 mb-3">
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+<div>
+{% if n.is_important %}<span class="badge bg-danger me-1">Important</span>{% endif %}
+<span class="badge bg-secondary">{{ n.category }}</span>
+<h5 class="mt-2 mb-1"><a href="{{ url_for('notice_detail', notice_id=n.id) }}" class="text-decoration-none">{{ n.title }}</a></h5>
+<p class="text-muted small mb-0">{{ format_date(n.published_at) }}</p>
+</div>
+<a href="{{ url_for('notice_detail', notice_id=n.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+</div></div>
+{% else %}<p class="text-center text-muted">No notices at this time.</p>{% endfor %}
+</div></section>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Hero Slider</h4>
+<div class="row g-4">
+<div class="col-lg-5">
+<div class="stat-card">
+<h6>Add Slide</h6>
+<form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="action" value="add">
+<div class="mb-2"><input type="text" name="title" class="form-control" placeholder="Title"></div>
+<div class="mb-2"><input type="text" name="subtitle" class="form-control" placeholder="Subtitle"></div>
+<div class="mb-2"><textarea name="description" class="form-control" placeholder="Description" rows="2"></textarea></div>
+<div class="mb-2"><input type="text" name="button1_text" class="form-control" placeholder="Button 1 text"></div>
+<div class="mb-2"><input type="text" name="button1_url" class="form-control" placeholder="Button 1 URL"></div>
+<div class="mb-2"><input type="text" name="button2_text" class="form-control" placeholder="Button 2 text"></div>
+<div class="mb-2"><input type="text" name="button2_url" class="form-control" placeholder="Button 2 URL"></div>
+<div class="mb-2"><input type="number" name="sort_order" class="form-control" placeholder="Order" value="0"></div>
+<div class="mb-2"><input type="file" name="image" class="form-control" accept="image/*"></div>
+<div class="form-check mb-2"><input type="checkbox" name="is_active" class="form-check-input" checked id="sa"><label for="sa" class="form-check-label">Active</label></div>
+<button type="submit" class="btn btn-primary btn-sm">Add Slide</button>
+</form>
+</div></div>
+<div class="col-lg-7">
+{% for s in slides %}
+<div class="stat-card mb-3">
+<div class="d-flex justify-content-between">
+<div>
+<strong>{{ s.title }}</strong>
+{% if s.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+<p class="small text-muted mb-0">{{ s.subtitle }}</p>
+</div>
+<form method="POST" onsubmit="return confirm('Delete?')">
+<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ s.id }}">
+<button class="btn btn-sm btn-outline-danger">Delete</button>
+</form>
+</div>
+{% if s.image_url %}<img src="{{ s.image_url }}" class="mt-2 rounded" style="height:80px;object-fit:cover">{% endif %}
+</div>
+{% else %}<p class="text-muted">No slides yet.</p>{% endfor %}
+</div></div>
+{% include "admin/_layout_end.html" %}

@@ -1,0 +1,31 @@
+{% include "admin/_layout_start.html" %}
+{% block page_heading %}Dashboard{% endblock %}
+<div class="row g-3 mb-4">
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num">{{ stats.teachers }}</div><div class="text-muted small">Teachers</div></div></div>
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num">{{ stats.news }}</div><div class="text-muted small">News</div></div></div>
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num">{{ stats.notices }}</div><div class="text-muted small">Notices</div></div></div>
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num">{{ stats.events }}</div><div class="text-muted small">Events</div></div></div>
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num">{{ stats.gallery }}</div><div class="text-muted small">Gallery</div></div></div>
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num text-danger">{{ stats.new_applications }}</div><div class="text-muted small">New Applications</div></div></div>
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num text-warning">{{ stats.new_inquiries }}</div><div class="text-muted small">New Inquiries</div></div></div>
+<div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num">{{ stats.applications }}</div><div class="text-muted small">Total Applications</div></div></div>
+</div>
+<div class="row g-4">
+<div class="col-lg-6">
+<div class="stat-card">
+<h6 class="mb-3">Latest Applications</h6>
+{% for a in recent_apps %}
+<div class="d-flex justify-content-between border-bottom py-2"><div><strong>{{ a.student_name }}</strong><br><small class="text-muted">{{ a.applying_grade }} · {{ a.status }}</small></div><small>{{ format_date(a.created_at) }}</small></div>
+{% else %}<p class="text-muted small">No applications yet.</p>{% endfor %}
+<a href="{{ url_for('admin_admissions') }}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
+</div></div>
+<div class="col-lg-6">
+<div class="stat-card">
+<h6 class="mb-3">Latest Inquiries</h6>
+{% for i in recent_inquiries %}
+<div class="d-flex justify-content-between border-bottom py-2"><div><strong>{{ i.name }}</strong><br><small class="text-muted">{{ i.subject or 'No subject' }} · {{ i.status }}</small></div><small>{{ format_date(i.created_at) }}</small></div>
+{% else %}<p class="text-muted small">No inquiries yet.</p>{% endfor %}
+<a href="{{ url_for('admin_inquiries') }}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
+</div></div>
+</div>
+{% include "admin/_layout_end.html" %}

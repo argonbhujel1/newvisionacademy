@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Frequently Asked Questions</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">FAQ</li></ol></nav></div></section>
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-8">
+<div class="accordion" id="faqAccordion">
+{% for f in faqs %}
+<div class="accordion-item">
+<h2 class="accordion-header"><button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#faq{{ f.id }}">{{ f.question }}</button></h2>
+<div id="faq{{ f.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#faqAccordion">
+<div class="accordion-body">{{ f.answer }}</div></div></div>
+{% else %}<p class="text-center text-muted">FAQs will be published by the school.</p>{% endfor %}
+</div></div></div></div></section>
+{% endblock %}

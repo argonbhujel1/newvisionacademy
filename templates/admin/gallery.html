@@ -1,0 +1,28 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Gallery</h4>
+<div class="stat-card mb-4">
+<form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="action" value="add">
+<div class="row g-2">
+<div class="col-md-4"><input type="text" name="title" class="form-control" placeholder="Title"></div>
+<div class="col-md-3"><select name="category" class="form-select"><option>School Life</option><option>Classroom</option><option>Sports</option><option>Events</option><option>Students</option><option>Teachers</option><option>Activities</option><option>Infrastructure</option></select></div>
+<div class="col-md-3"><input type="file" name="images" class="form-control" accept="image/*" multiple required></div>
+<div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Upload</button></div>
+</div>
+<div class="form-check mt-2"><input type="checkbox" name="is_featured" class="form-check-input" id="gf"><label for="gf">Featured</label></div>
+</form>
+</div>
+<div class="row g-3">
+{% for img in images %}
+<div class="col-6 col-md-3">
+<div class="stat-card p-2">
+<img src="{{ img.image_url }}" class="w-100 rounded mb-1" style="height:120px;object-fit:cover">
+<small>{{ img.title or img.category }}</small>
+<form method="POST" onsubmit="return confirm('Delete?')" class="mt-1">
+<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ img.id }}">
+<button class="btn btn-sm btn-outline-danger w-100">Delete</button>
+</form>
+</div></div>
+{% else %}<p class="text-muted">No images yet. Upload above.</p>{% endfor %}
+</div>
+{% include "admin/_layout_end.html" %}

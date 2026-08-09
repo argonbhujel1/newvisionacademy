@@ -1,0 +1,22 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Contact Inquiries</h4>
+{% for i in inquiries %}
+<div class="stat-card mb-3">
+<div class="d-flex justify-content-between">
+<div>
+<strong>{{ i.name }}</strong> <span class="badge bg-{% if i.status=='New' %}danger{% else %}secondary{% endif %}">{{ i.status }}</span>
+<br><small class="text-muted">{{ i.email }} · {{ i.phone }} · {{ format_datetime(i.created_at) }}</small>
+<p class="mb-1 mt-2"><strong>{{ i.subject }}</strong></p>
+<p class="mb-0">{{ i.message }}</p>
+</div>
+<form method="POST">
+<input type="hidden" name="action" value="update_status">
+<input type="hidden" name="id" value="{{ i.id }}">
+<select name="status" class="form-select form-select-sm mb-1">
+{% for s in ['New','Read','Replied','Archived'] %}<option value="{{ s }}" {% if i.status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+</select>
+<button class="btn btn-sm btn-primary w-100">Update</button>
+</form>
+</div></div>
+{% else %}<p class="text-muted">No inquiries yet.</p>{% endfor %}
+{% include "admin/_layout_end.html" %}

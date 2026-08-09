@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>{{ news.title }}</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('news') }}">News</a></li><li class="breadcrumb-item active">Article</li></ol></nav></div></section>
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-8">
+{% if news.cover_image %}<img src="{{ news.cover_image }}" class="rounded mb-4 w-100" alt="{{ news.title }}">{% endif %}
+<div class="news-meta mb-3"><i class="far fa-calendar me-1"></i>{{ format_date(news.published_at) }} · {{ news.category }} · By {{ news.author }}</div>
+<div class="content">{{ news.content|safe }}</div>
+<a href="{{ url_for('news') }}" class="btn btn-outline-primary mt-4">← Back to News</a>
+{% if related %}<hr class="my-5"><h4>Related News</h4><div class="row g-3">
+{% for r in related %}<div class="col-md-4"><a href="{{ url_for('news_detail', slug=r.slug) }}" class="text-decoration-none"><strong>{{ r.title }}</strong></a></div>{% endfor %}
+</div>{% endif %}
+</div></div></div></section>
+{% endblock %}
