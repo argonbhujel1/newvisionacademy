@@ -1,32 +1,98 @@
 {% include "admin/_layout_start.html" %}
 <h4 class="mb-4">Admission Applications</h4>
-<div class="table-responsive">
-<table class="table table-hover bg-white rounded">
-<thead><tr><th>ID</th><th>Student</th><th>Grade</th><th>Parent</th><th>Phone</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
-<tbody>
+
 {% for a in applications %}
-<tr>
-<td><small>{{ a.application_id }}</small></td>
-<td>{{ a.student_name }}</td>
-<td>{{ a.applying_grade }}</td>
-<td>{{ a.parent_name }}</td>
-<td>{{ a.phone }}</td>
-<td><span class="badge bg-{% if a.status=='New' %}danger{% elif a.status=='Approved' %}success{% else %}secondary{% endif %}">{{ a.status }}</span></td>
-<td><small>{{ format_date(a.created_at) }}</small></td>
-<td>
-<form method="POST" class="d-flex gap-1">
-<input type="hidden" name="action" value="update_status">
-<input type="hidden" name="id" value="{{ a.id }}">
-<select name="status" class="form-select form-select-sm" style="width:auto">
-{% for s in ['New','Under Review','Contacted','Approved','Rejected','Completed'] %}
-<option value="{{ s }}" {% if a.status==s %}selected{% endif %}>{{ s }}</option>
-{% endfor %}
-</select>
-<button class="btn btn-sm btn-primary">Update</button>
-</form>
-</td>
-</tr>
-{% else %}<tr><td colspan="8" class="text-muted text-center">No applications yet.</td></tr>{% endfor %}
-</tbody></table>
+<div class="stat-card mb-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+    <div>
+      <strong class="fs-5">{{ a.student_name }}</strong>
+      <span class="badge bg-{% if a.status=='New' %}danger{% elif a.status=='Approved' %}success{% elif a.status=='Rejected' %}dark{% else %}secondary{% endif %} ms-1">{{ a.status }}</span>
+      {% if a.application_id %}<small class="text-muted ms-2">ID: {{ a.application_id }}</small>{% endif %}
+      <div class="small text-muted">{{ format_datetime(a.created_at) if a.created_at else format_date(a.created_at) }}</div>
+    </div>
+    <form method="POST" class="d-flex flex-wrap gap-1 align-items-end">
+      <input type="hidden" name="action" value="update_status">
+      <input type="hidden" name="id" value="{{ a.id }}">
+      <div>
+        <label class="form-label small mb-0">Status</label>
+        <select name="status" class="form-select form-select-sm" style="width:auto;min-width:140px">
+          {% for s in ['New','Under Review','Contacted','Approved','Rejected','Completed'] %}
+          <option value="{{ s }}" {% if a.status==s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">Update Status</button>
+    </form>
+  </div>
+
+  <div class="row g-3 small">
+    <div class="col-md-6">
+      <div class="bg-light rounded p-3 h-100">
+        <div class="fw-semibold mb-2 text-secondary">Student Details</div>
+        <div class="mb-1"><strong>Name:</strong> {{ a.student_name }}</div>
+        {% if a.date_of_birth %}<div class="mb-1"><strong>Date of Birth:</strong> {{ a.date_of_birth.strftime('%d %b %Y') if a.date_of_birth else a.date_of_birth }}</div>{% endif %}
+        {% if a.gender %}<div class="mb-1"><strong>Gender:</strong> {{ a.gender }}</div>{% endif %}
+        {% if a.applying_grade %}<div class="mb-1"><strong>Applying Grade:</strong> {{ a.applying_grade }}</div>{% endif %}
+        {% if a.previous_school %}<div class="mb-1"><strong>Previous School:</strong> {{ a.previous_school }}</div>{% endif %}
+        {% if a.previous_grade %}<div class="mb-1"><strong>Previous Grade:</strong> {{ a.previous_grade }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="bg-light rounded p-3 h-100">
+        <div class="fw-semibold mb-2 text-secondary">Parent / Contact</div>
+        <div class="mb-1"><strong>Parent/Guardian:</strong> {{ a.parent_name }}</div>
+        {% if a.relationship %}<div class="mb-1"><strong>Relationship:</strong> {{ a.relationship }}</div>{% endif %}
+        {% if a.phone %}<div class="mb-1"><strong>Phone:</strong> <a href="tel:{{ a.phone|replace(' ', '') }}">{{ a.phone }}</a></div>{% endif %}
+        {% if a.email %}<div class="mb-1"><strong>Email:</strong> <a href="mailto:{{ a.email }}">{{ a.email }}</a></div>{% endif %}
+        {% if a.address %}<div class="mb-1"><strong>Address:</strong> {{ a.address }}</div>{% endif %}
+      </div>
+    </div>
+    {% if a.message %}
+    <div class="col-12">
+      <div class="bg-light rounded p-3">
+        <div class="fw-semibold mb-1 text-secondary">Message / Additional Info</div>
+        <div style="white-space:pre-wrap">{{ a.message }}</div>
+      </div>
+    </div>
+    {% endif %}
+    {% if a.photo_url or a.document_url %}
+    <div class="col-12">
+      <div class="d-flex flex-wrap gap-3">
+        {% if a.photo_url %}
+        <div>
+          <div class="small text-muted mb-1">Photo</div>
+          <a href="{{ a.photo_url }}" target="_blank" rel="noopener">
+            <img src="{{ a.photo_url }}" alt="Photo" style="height:80px;width:auto;object-fit:cover;border-radius:6px">
+          </a>
+        </div>
+        {% endif %}
+        {% if a.document_url %}
+        <div>
+          <div class="small text-muted mb-1">Document</div>
+          <a href="{{ a.document_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-file-download me-1"></i> View / Download
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <details class="mt-3">
+    <summary class="btn btn-sm btn-outline-secondary" style="cursor:pointer;list-style:none">Admin notes &amp; update</summary>
+    <form method="POST" class="mt-2 border-top pt-3">
+      <input type="hidden" name="action" value="update_status">
+      <input type="hidden" name="id" value="{{ a.id }}">
+      <input type="hidden" name="status" value="{{ a.status }}">
+      <label class="form-label small">Admin notes (internal)</label>
+      <textarea name="admin_notes" class="form-control form-control-sm mb-2" rows="2" placeholder="Internal notes...">{{ a.admin_notes or '' }}</textarea>
+      <button type="submit" class="btn btn-sm btn-primary">Save Notes</button>
+    </form>
+  </details>
 </div>
+{% else %}
+<p class="text-muted text-center py-4">No applications yet.</p>
+{% endfor %}
+
 {% include "admin/_layout_end.html" %}
