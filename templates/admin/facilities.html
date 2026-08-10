@@ -1,22 +1,87 @@
 {% include "admin/_layout_start.html" %}
 <h4 class="mb-4">Facilities</h4>
 <div class="row g-4">
-<div class="col-lg-4"><div class="stat-card">
-<form method="POST" enctype="multipart/form-data">
-<input type="hidden" name="action" value="add">
-<input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
-<textarea name="description" class="form-control mb-2" rows="2" placeholder="Description"></textarea>
-<input type="text" name="icon" class="form-control mb-2" placeholder="FA icon e.g. fa-book" value="fa-building">
-<input type="number" name="sort_order" class="form-control mb-2" value="0">
-<input type="file" name="image" class="form-control mb-2" accept="image/*">
-<div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="fa"><label for="fa">Active</label></div>
-<button type="submit" class="btn btn-primary btn-sm">Add</button>
-</form></div></div>
-<div class="col-lg-8">
-{% for f in facilities %}
-<div class="stat-card mb-2 d-flex justify-content-between"><div><i class="fas {{ f.icon }} me-2"></i><strong>{{ f.title }}</strong></div>
-<form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ f.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+  <div class="col-lg-4">
+    <div class="stat-card">
+      <h6 class="mb-3">Add Facility</h6>
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="add">
+        <input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
+        <textarea name="description" class="form-control mb-2" rows="2" placeholder="Description"></textarea>
+        <input type="text" name="icon" class="form-control mb-2" placeholder="FA icon e.g. fa-book" value="fa-building">
+        <input type="number" name="sort_order" class="form-control mb-2" value="0" placeholder="Sort order">
+        <input type="file" name="image" class="form-control mb-2" accept="image/*">
+        <div class="form-check mb-2">
+          <input type="checkbox" name="is_active" checked class="form-check-input" id="fa">
+          <label for="fa">Active</label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Add Facility</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <h6 class="mb-3">Existing Facilities</h6>
+    {% for f in facilities %}
+    <div class="stat-card mb-3">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <i class="fas {{ f.icon or 'fa-building' }} me-2 text-secondary"></i>
+          <strong>{{ f.title }}</strong>
+          {% if not f.is_active %}<span class="badge bg-secondary ms-1">Inactive</span>{% endif %}
+          <span class="text-muted small ms-2">#{{ f.sort_order }}</span>
+        </div>
+        <form method="POST" onsubmit="return confirm('Delete this facility?')" class="d-inline">
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="id" value="{{ f.id }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </div>
+      {% if f.description %}<p class="small text-muted mb-2">{{ f.description }}</p>{% endif %}
+      {% if f.image_url %}
+      <img src="{{ f.image_url }}" alt="{{ f.title }}" class="rounded mb-2" style="height:60px;width:auto;object-fit:cover">
+      {% endif %}
+      <details class="mt-2">
+        <summary class="btn btn-sm btn-outline-primary" style="cursor:pointer;list-style:none">Edit</summary>
+        <form method="POST" enctype="multipart/form-data" class="mt-3 border-top pt-3">
+          <input type="hidden" name="action" value="edit">
+          <input type="hidden" name="id" value="{{ f.id }}">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small">Title</label>
+              <input type="text" name="title" class="form-control form-control-sm" value="{{ f.title }}" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Icon (FA class)</label>
+              <input type="text" name="icon" class="form-control form-control-sm" value="{{ f.icon or 'fa-building' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Sort order</label>
+              <input type="number" name="sort_order" class="form-control form-control-sm" value="{{ f.sort_order }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label small">Description</label>
+              <textarea name="description" class="form-control form-control-sm" rows="2">{{ f.description or '' }}</textarea>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label small">Image {% if f.image_url %}(leave empty to keep current){% endif %}</label>
+              <input type="file" name="image" class="form-control form-control-sm" accept="image/*">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <div class="form-check mb-2">
+                <input type="checkbox" name="is_active" class="form-check-input" id="active{{ f.id }}" {% if f.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="active{{ f.id }}">Active</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-sm btn-primary">Save Changes</button>
+            </div>
+          </div>
+        </form>
+      </details>
+    </div>
+    {% else %}
+    <p class="text-muted">No facilities yet. Add one using the form on the left.</p>
+    {% endfor %}
+  </div>
 </div>
-{% endfor %}
-</div></div>
 {% include "admin/_layout_end.html" %}

@@ -439,9 +439,9 @@
           <span class="eyebrow">Get in Touch</span>
           <h2>Visit or Contact Us</h2>
         </div>
-        <p><i class="fas fa-map-marker-alt me-2 text-secondary"></i>{{ profile.address }}</p>
-        {% if profile.phone %}<p><i class="fas fa-phone me-2 text-secondary"></i>{{ profile.phone }}</p>{% endif %}
-        {% if profile.email %}<p><i class="fas fa-envelope me-2 text-secondary"></i>{{ profile.email }}</p>{% endif %}
+        <p><i class="fas fa-map-marker-alt me-2 text-secondary"></i><a href="https://www.google.com/maps/search/?api=1&amp;query={{ profile.address|urlencode }}" target="_blank" rel="noopener">{{ profile.address }}</a></p>
+        {% if profile.phone %}<p><i class="fas fa-phone me-2 text-secondary"></i><a href="tel:{{ profile.phone|replace(' ', '') }}">{{ profile.phone }}</a></p>{% endif %}
+        {% if profile.email %}<p><i class="fas fa-envelope me-2 text-secondary"></i><a href="mailto:{{ profile.email }}">{{ profile.email }}</a></p>{% endif %}
         <p><i class="fas fa-clock me-2 text-secondary"></i>{{ profile.office_hours }}</p>
         <a href="{{ url_for('contact') }}" class="btn btn-primary-custom">Send a Message</a>
       </div>

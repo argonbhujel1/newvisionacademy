@@ -6,9 +6,9 @@
 <div class="row g-5">
 <div class="col-lg-5">
 <h3>{{ profile.school_name }}</h3>
-<p class="mb-1"><i class="fas fa-map-marker-alt me-2 text-secondary"></i>{{ profile.address }}</p>
-{% if profile.phone %}<p class="mb-1"><i class="fas fa-phone me-2 text-secondary"></i>{{ profile.phone }}{% if profile.phone2 %} / {{ profile.phone2 }}{% endif %}</p>{% endif %}
-{% if profile.email %}<p class="mb-1"><i class="fas fa-envelope me-2 text-secondary"></i>{{ profile.email }}</p>{% endif %}
+<p class="mb-1"><i class="fas fa-map-marker-alt me-2 text-secondary"></i><a href="https://www.google.com/maps/search/?api=1&amp;query={{ profile.address|urlencode }}" target="_blank" rel="noopener">{{ profile.address }}</a></p>
+{% if profile.phone %}<p class="mb-1"><i class="fas fa-phone me-2 text-secondary"></i><a href="tel:{{ profile.phone|replace(' ', '') }}">{{ profile.phone }}</a>{% if profile.phone2 %} / <a href="tel:{{ profile.phone2|replace(' ', '') }}">{{ profile.phone2 }}</a>{% endif %}</p>{% endif %}
+{% if profile.email %}<p class="mb-1"><i class="fas fa-envelope me-2 text-secondary"></i><a href="mailto:{{ profile.email }}">{{ profile.email }}</a></p>{% endif %}
 {% if profile.school_code %}<p class="mb-1"><i class="fas fa-id-card me-2 text-secondary"></i>School Code: {{ profile.school_code }}</p>{% endif %}
 <p class="mb-3"><i class="fas fa-clock me-2 text-secondary"></i>{{ profile.office_hours }}</p>
 {% if profile.google_maps %}<div class="rounded overflow-hidden mt-3">{{ profile.google_maps|safe }}</div>{% endif %}
