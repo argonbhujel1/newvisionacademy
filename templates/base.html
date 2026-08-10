@@ -231,6 +231,39 @@
     </div>
   </footer>
 
+  <!-- Newsletter modal -->
+  <div class="modal fade" id="newsletterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title">Stay Updated</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-2">
+          <p class="text-muted">Enter your email address to get notified of the latest news, notices and events from {{ profile.school_name }}.</p>
+          <form id="newsletterForm">
+            <div class="input-group mb-2">
+              <input type="email" name="email" id="newsletterEmail" class="form-control" placeholder="your@email.com" required>
+              <button class="btn btn-cta" type="submit">Subscribe</button>
+            </div>
+            <div id="newsletterMsg" class="small"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cookie consent -->
+  <div id="cookieBanner" class="cookie-banner" style="display:none">
+    <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2 py-2">
+      <p class="mb-0 small">We use cookies to improve your experience. By continuing you agree to our <a href="{{ url_for('privacy') }}">Privacy Policy</a>.</p>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-light" id="cookieDecline">Decline</button>
+        <button type="button" class="btn btn-sm btn-cta" id="cookieAccept">Accept</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block scripts %}{% endblock %}

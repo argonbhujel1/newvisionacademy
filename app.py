@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 from config import Config, NEPAL_TZ
 from utils.timezone import now_nepal, to_nepal, format_date, format_time, format_datetime
-from utils.cloudinary import init_cloudinary, upload_image, delete_image
+from utils.cloudinary import init_cloudinary, upload_image, upload_file, delete_image
 from utils.email import send_email, render_template_vars, get_response_time_text
 
 load_dotenv()
@@ -315,10 +315,18 @@ class ContactInquiry(db.Model):
     email = db.Column(db.String(120), default="")
     subject = db.Column(db.String(200), default="")
     message = db.Column(db.Text, nullable=False)
+    document_url = db.Column(db.String(500), default="")
     status = db.Column(db.String(20), default="New")  # New, Read, Replied, Archived
     admin_notes = db.Column(db.Text, default="")
     created_at = db.Column(db.DateTime, default=lambda: now_nepal())
     updated_at = db.Column(db.DateTime, default=lambda: now_nepal(), onupdate=lambda: now_nepal())
+
+
+class NewsletterSubscriber(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: now_nepal())
 
 
 class EmailTemplate(db.Model):
@@ -416,6 +424,40 @@ def slugify(text):
     text = re.sub(r"[^\w\s-]", "", text)
     text = re.sub(r"[\s_-]+", "-", text)
     return text[:80]
+
+
+def notify_subscribers(update_type, title, summary="", link_path="/"):
+    """Email all active newsletter subscribers about a new update."""
+    try:
+        subs = NewsletterSubscriber.query.filter_by(is_active=True).all()
+        if not subs:
+            return 0
+        profile = get_profile()
+        school = profile.school_name if profile else "New Vision Academy"
+        base = (profile.website if profile and profile.website else "").rstrip("/")
+        if not base:
+            base = request.url_root.rstrip("/") if request else ""
+        full_link = f"{base}{link_path}" if link_path.startswith("/") else link_path
+        subject = f"[{school}] New {update_type}: {title}"
+        body = f"""
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
+          <h2 style="color:#0a2540">{school}</h2>
+          <p>A new <strong>{update_type}</strong> has been published:</p>
+          <h3 style="color:#1e4d8c">{title}</h3>
+          <p>{summary or ''}</p>
+          <p><a href="{full_link}" style="background:#c41e3a;color:#fff;padding:10px 18px;text-decoration:none;border-radius:6px;display:inline-block">View on website</a></p>
+          <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+          <p style="font-size:12px;color:#718096">You received this because you subscribed to updates from {school}.</p>
+        </div>
+        """
+        sent = 0
+        for s in subs:
+            if send_email(subject, s.email, body):
+                sent += 1
+        return sent
+    except Exception as e:
+        app.logger.error(f"notify_subscribers error: {e}")
+        return 0
 
 
 def admin_required(f):
@@ -792,6 +834,10 @@ def contact():
                 subject=request.form.get("subject", "").strip(),
                 message=request.form.get("message", "").strip(),
             )
+            if "document" in request.files and request.files["document"].filename:
+                result = upload_file(request.files["document"], folder="newvisionacademy/inquiries")
+                if result:
+                    inquiry.document_url = result["url"]
             db.session.add(inquiry)
             db.session.commit()
 
@@ -817,10 +863,12 @@ def contact():
                 send_email(subject, inquiry.email, body)
 
             if profile.email:
+                doc_line = f'<p>Document: <a href="{inquiry.document_url}">{inquiry.document_url}</a></p>' if inquiry.document_url else ""
                 admin_body = f"""
                 <p>New contact inquiry from <strong>{inquiry.name}</strong></p>
                 <p>Phone: {inquiry.phone}<br>Email: {inquiry.email}<br>Subject: {inquiry.subject}</p>
                 <p>{inquiry.message}</p>
+                {doc_line}
                 """
                 send_email(f"Contact Inquiry – {inquiry.subject or inquiry.name}", profile.email, admin_body)
 
@@ -832,6 +880,30 @@ def contact():
             flash("Something went wrong. Please try again.", "danger")
     seo = get_seo("contact", {"title": "Contact Us – New Vision Academy"})
     return render_template("contact.html", seo=seo)
+
+
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    email = (request.form.get("email") or (request.json or {}).get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"ok": False, "message": "Please enter a valid email address."}), 400
+        flash("Please enter a valid email address.", "danger")
+        return redirect(request.referrer or url_for("index"))
+    existing = NewsletterSubscriber.query.filter_by(email=email).first()
+    if existing:
+        if not existing.is_active:
+            existing.is_active = True
+            db.session.commit()
+        msg = "You are already subscribed. Thank you!"
+    else:
+        db.session.add(NewsletterSubscriber(email=email, is_active=True))
+        db.session.commit()
+        msg = "Thank you! You will receive updates about news, notices and events."
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"ok": True, "message": msg})
+    flash(msg, "success")
+    return redirect(request.referrer or url_for("index"))
 
 
 @app.route("/faq")
@@ -1435,6 +1507,8 @@ def admin_news():
                     n.cover_public_id = result.get("public_id", "")
             db.session.add(n)
             db.session.commit()
+            if n.status == "published":
+                notify_subscribers("News", n.title, n.excerpt or "", url_for("news_detail", slug=n.slug) if hasattr(n, "slug") else url_for("news"))
             flash("News created.", "success")
         elif action == "edit":
             n = News.query.get(request.form.get("id"))
@@ -1447,7 +1521,8 @@ def admin_news():
                 old_status = n.status
                 n.status = request.form.get("status", "draft")
                 n.is_featured = "is_featured" in request.form
-                if n.status == "published" and old_status != "published":
+                newly_published = n.status == "published" and old_status != "published"
+                if newly_published:
                     n.published_at = now_nepal()
                 if "cover" in request.files and request.files["cover"].filename:
                     result = upload_image(request.files["cover"], folder="newvisionacademy/news")
@@ -1455,6 +1530,8 @@ def admin_news():
                         n.cover_image = result["url"]
                         n.cover_public_id = result.get("public_id", "")
                 db.session.commit()
+                if newly_published:
+                    notify_subscribers("News", n.title, n.excerpt or "", url_for("news_detail", slug=n.slug) if n.slug else url_for("news"))
                 flash("News updated.", "success")
         elif action == "delete":
             n = News.query.get(request.form.get("id"))
@@ -1491,6 +1568,9 @@ def admin_notices():
                 n.expiry_date = datetime.strptime(request.form["expiry_date"], "%Y-%m-%d")
             db.session.add(n)
             db.session.commit()
+            if n.is_active:
+                link = url_for("notice_detail", notice_id=n.id) if n.id else url_for("notices")
+                notify_subscribers("Notice", n.title, (n.description or "")[:200], link)
             flash("Notice added.", "success")
         elif action == "edit":
             n = Notice.query.get(request.form.get("id"))
@@ -1546,6 +1626,11 @@ def admin_events():
                     e.image_public_id = result.get("public_id", "")
             db.session.add(e)
             db.session.commit()
+            if e.is_active:
+                summary = e.description or ""
+                if e.event_date:
+                    summary = f"Date: {e.event_date}. " + summary
+                notify_subscribers("Event", e.name, summary[:200], url_for("events"))
             flash("Event added.", "success")
         elif action == "edit":
             e = Event.query.get(request.form.get("id"))
@@ -1788,6 +1873,22 @@ def admin_email_settings():
 def seed_database():
     """Create tables and seed default data on first run."""
     db.create_all()
+
+    # Lightweight migrations for new columns (Postgres / SQLite)
+    try:
+        from sqlalchemy import text, inspect
+        insp = inspect(db.engine)
+        if "contact_inquiry" in insp.get_table_names():
+            cols = [c["name"] for c in insp.get_columns("contact_inquiry")]
+            if "document_url" not in cols:
+                db.session.execute(text("ALTER TABLE contact_inquiry ADD COLUMN document_url VARCHAR(500) DEFAULT ''"))
+                db.session.commit()
+    except Exception as e:
+        app.logger.warning(f"Schema migrate skip: {e}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
     # Admin user
     admin_email = app.config.get("ADMIN_EMAIL") or "admin@newvisionacademy.com.np"

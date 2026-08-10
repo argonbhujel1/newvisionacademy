@@ -16,13 +16,14 @@
 <div class="col-lg-7">
 <div class="card-modern p-4">
 <h4 class="mb-4">Send a Message</h4>
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 <div class="row g-3">
 <div class="col-md-6"><label class="form-label">Your Name *</label><input type="text" name="name" class="form-control" required></div>
 <div class="col-md-6"><label class="form-label">Phone</label><input type="tel" name="phone" class="form-control"></div>
 <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control"></div>
 <div class="col-md-6"><label class="form-label">Subject</label><input type="text" name="subject" class="form-control"></div>
 <div class="col-12"><label class="form-label">Message *</label><textarea name="message" class="form-control" rows="5" required></textarea></div>
+<div class="col-12"><label class="form-label">Attach Document (optional)</label><input type="file" name="document" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"></div>
 <div class="col-12"><button type="submit" class="btn btn-primary-custom">Send Message</button></div>
 </div>
 </form>

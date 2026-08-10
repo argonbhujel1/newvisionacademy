@@ -108,6 +108,40 @@ def upload_image(file, folder="newvisionacademy", public_id=None, transformation
         return None
 
 
+def upload_file(file, folder="newvisionacademy/docs"):
+    """
+    Upload any file (PDF, image, doc) to Cloudinary as resource_type=auto.
+    Returns dict {url, public_id, format} or None on failure.
+    """
+    if not file:
+        return None
+    filename = getattr(file, "filename", None)
+    if filename is not None and not str(filename).strip():
+        return None
+    payload = _get_file_payload(file)
+    if payload is None:
+        return None
+    try:
+        result = cloudinary.uploader.upload(
+            payload,
+            folder=folder,
+            resource_type="auto",
+            overwrite=True,
+            invalidate=True,
+        )
+        url = result.get("secure_url") or result.get("url")
+        if not url:
+            return None
+        return {
+            "url": url,
+            "public_id": result.get("public_id", ""),
+            "format": result.get("format"),
+        }
+    except Exception as e:
+        current_app.logger.error("Cloudinary file upload error: %s", e, exc_info=True)
+        return None
+
+
 def delete_image(public_id):
     """Delete an image from Cloudinary by public_id."""
     if not public_id:

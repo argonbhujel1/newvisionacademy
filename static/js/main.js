@@ -93,4 +93,92 @@ document.addEventListener('DOMContentLoaded', function () {
       if (btn) btn.click();
     });
   }, 6000);
+
+  // Cookie consent
+  const cookieBanner = document.getElementById('cookieBanner');
+  if (cookieBanner) {
+    const cookieChoice = localStorage.getItem('nva_cookie_consent');
+    if (!cookieChoice) {
+      cookieBanner.style.display = 'block';
+    }
+    const acceptBtn = document.getElementById('cookieAccept');
+    const declineBtn = document.getElementById('cookieDecline');
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        localStorage.setItem('nva_cookie_consent', 'accepted');
+        cookieBanner.style.display = 'none';
+      });
+    }
+    if (declineBtn) {
+      declineBtn.addEventListener('click', () => {
+        localStorage.setItem('nva_cookie_consent', 'declined');
+        cookieBanner.style.display = 'none';
+      });
+    }
+  }
+
+  // Newsletter popup
+  const newsletterModalEl = document.getElementById('newsletterModal');
+  if (newsletterModalEl && typeof bootstrap !== 'undefined') {
+    let done = localStorage.getItem('nva_newsletter_done') || '';
+    if (done.startsWith('dismissed_')) {
+      const ts = parseInt(done.split('_')[1], 10);
+      if (Date.now() - ts > 7 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('nva_newsletter_done');
+        done = '';
+      }
+    }
+    if (!done || done.startsWith('dismissed_') === false && done !== '1') {
+      // show only if never subscribed; dismissed within 7 days stays hidden
+    }
+    if (done !== '1' && !done.startsWith('dismissed_')) {
+      setTimeout(() => {
+        try {
+          const modal = new bootstrap.Modal(newsletterModalEl);
+          modal.show();
+        } catch (e) {}
+      }, 2500);
+    }
+    const form = document.getElementById('newsletterForm');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('newsletterEmail').value.trim();
+        const msgEl = document.getElementById('newsletterMsg');
+        if (!email) return;
+        try {
+          const res = await fetch('/subscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ email })
+          });
+          const data = await res.json();
+          if (msgEl) {
+            msgEl.textContent = data.message || 'Thank you!';
+            msgEl.className = 'small ' + (data.ok ? 'text-success' : 'text-danger');
+          }
+          if (data.ok) {
+            localStorage.setItem('nva_newsletter_done', '1');
+            setTimeout(() => {
+              const m = bootstrap.Modal.getInstance(newsletterModalEl);
+              if (m) m.hide();
+            }, 1500);
+          }
+        } catch (err) {
+          if (msgEl) {
+            msgEl.textContent = 'Something went wrong. Please try again.';
+            msgEl.className = 'small text-danger';
+          }
+        }
+      });
+    }
+    newsletterModalEl.addEventListener('hidden.bs.modal', () => {
+      if (localStorage.getItem('nva_newsletter_done') !== '1') {
+        localStorage.setItem('nva_newsletter_done', 'dismissed_' + Date.now());
+      }
+    });
+  }
 });
