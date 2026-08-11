@@ -1,21 +1,36 @@
 {% include "admin/_layout_start.html" %}
 <h4 class="mb-4">Activities</h4>
 <div class="row g-4">
-<div class="col-lg-4"><div class="stat-card">
+<div class="col-lg-5"><div class="stat-card">
 <form method="POST" enctype="multipart/form-data">
 <input type="hidden" name="action" value="add">
-<input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
-<textarea name="description" class="form-control mb-2" rows="2"></textarea>
+<input type="text" name="title" class="form-control mb-2" placeholder="Title (shared for bulk)" required>
+<textarea name="description" class="form-control mb-2" rows="2" placeholder="Description (optional)"></textarea>
 <input type="text" name="category" class="form-control mb-2" placeholder="Category" value="General">
 <input type="date" name="activity_date" class="form-control mb-2">
-<input type="number" name="sort_order" class="form-control mb-2" value="0">
-<input type="file" name="image" class="form-control mb-2" accept="image/*">
+<input type="number" name="sort_order" class="form-control mb-2" value="0" placeholder="Sort order">
+<label class="form-label small mb-1">Photos &amp; Videos (bulk upload from PC)</label>
+<input type="file" name="media" class="form-control mb-2" accept="image/*,video/*" multiple>
+<small class="text-muted d-block mb-2">Multiple photos and videos select गर्न सकिन्छ (Ctrl/Cmd + click). Each file = one activity entry.</small>
 <div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="aa"><label for="aa">Active</label></div>
-<button type="submit" class="btn btn-primary btn-sm">Add</button>
-</form></div></div>
-<div class="col-lg-8">
+<button type="submit" class="btn btn-primary btn-sm">Add / Upload</button>
+</form>
+</div></div>
+<div class="col-lg-7">
 {% for a in activities %}
-<div class="stat-card mb-2 d-flex justify-content-between"><div><strong>{{ a.title }}</strong> <span class="badge bg-secondary">{{ a.category }}</span></div>
+<div class="stat-card mb-2 d-flex justify-content-between align-items-center gap-2">
+<div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width:0">
+{% if a.image_url %}
+  {% set url_l = a.image_url|lower %}
+  {% set is_video = url_l.endswith('.mp4') or url_l.endswith('.webm') or url_l.endswith('.mov') or url_l.endswith('.avi') or url_l.endswith('.mkv') or '/video/' in url_l or 'video/upload' in url_l %}
+  {% if is_video %}
+  <video src="{{ a.image_url }}" style="width:64px;height:48px;object-fit:cover;border-radius:6px" muted></video>
+  {% else %}
+  <img src="{{ a.image_url }}" style="width:64px;height:48px;object-fit:cover;border-radius:6px" alt="">
+  {% endif %}
+{% endif %}
+<div style="min-width:0"><strong class="d-block text-truncate">{{ a.title }}</strong> <span class="badge bg-secondary">{{ a.category }}</span></div>
+</div>
 <form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ a.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
 </div>
 {% else %}<p class="text-muted">No activities yet.</p>{% endfor %}

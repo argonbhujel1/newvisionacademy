@@ -7,7 +7,15 @@
 {% for a in activities %}
 <div class="col-md-6 col-lg-4">
 <div class="card-modern h-100">
-{% if a.image_url %}<img src="{{ a.image_url }}" class="card-img-top" alt="{{ a.title }}" loading="lazy">{% endif %}
+{% if a.image_url %}
+  {% set url_l = a.image_url|lower %}
+  {% set is_video = url_l.endswith('.mp4') or url_l.endswith('.webm') or url_l.endswith('.mov') or url_l.endswith('.avi') or url_l.endswith('.mkv') or '/video/' in url_l or 'video/upload' in url_l %}
+  {% if is_video %}
+  <video src="{{ a.image_url }}" class="card-img-top" controls playsinline preload="metadata" style="max-height:220px;object-fit:cover;width:100%"></video>
+  {% else %}
+  <img src="{{ a.image_url }}" class="card-img-top" alt="{{ a.title }}" loading="lazy">
+  {% endif %}
+{% endif %}
 <div class="p-3">
 <span class="badge bg-secondary mb-2">{{ a.category }}</span>
 <h5>{{ a.title }}</h5>

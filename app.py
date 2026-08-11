@@ -1388,23 +1388,59 @@ def admin_activities():
     if request.method == "POST":
         action = request.form.get("action")
         if action == "add":
-            a = Activity(
-                title=request.form.get("title", ""),
-                description=request.form.get("description", ""),
-                category=request.form.get("category", "General"),
-                sort_order=int(request.form.get("sort_order", 0) or 0),
-                is_active="is_active" in request.form,
-            )
+            title = request.form.get("title", "") or "Activity"
+            description = request.form.get("description", "")
+            category = request.form.get("category", "General")
+            sort_order = int(request.form.get("sort_order", 0) or 0)
+            is_active = "is_active" in request.form
+            activity_date = None
             if request.form.get("activity_date"):
-                a.activity_date = datetime.strptime(request.form["activity_date"], "%Y-%m-%d").date()
-            if "image" in request.files and request.files["image"].filename:
-                result = upload_image(request.files["image"], folder="newvisionacademy/activities")
-                if result:
-                    a.image_url = result["url"]
-                    a.image_public_id = result.get("public_id", "")
-            db.session.add(a)
-            db.session.commit()
-            flash("Activity added.", "success")
+                try:
+                    activity_date = datetime.strptime(request.form["activity_date"], "%Y-%m-%d").date()
+                except ValueError:
+                    activity_date = None
+
+            files = request.files.getlist("media")
+            # Fallback to single "image" field for backward compatibility
+            if not any(f and f.filename for f in files) and "image" in request.files:
+                files = [request.files["image"]]
+
+            uploaded = 0
+            valid_files = [f for f in files if f and f.filename]
+            if valid_files:
+                for idx, f in enumerate(valid_files):
+                    result = upload_file(f, folder="newvisionacademy/activities")
+                    if not result:
+                        # try image-specific upload as fallback
+                        result = upload_image(f, folder="newvisionacademy/activities")
+                    a = Activity(
+                        title=title if len(valid_files) == 1 else f"{title} ({idx + 1})",
+                        description=description,
+                        category=category,
+                        sort_order=sort_order + idx,
+                        is_active=is_active,
+                        activity_date=activity_date,
+                    )
+                    if result:
+                        a.image_url = result["url"]
+                        a.image_public_id = result.get("public_id", "")
+                    db.session.add(a)
+                    uploaded += 1
+                db.session.commit()
+                flash(f"{uploaded} activity item(s) added (photos/videos).", "success")
+            else:
+                # No media — still create one entry with title/description
+                a = Activity(
+                    title=title,
+                    description=description,
+                    category=category,
+                    sort_order=sort_order,
+                    is_active=is_active,
+                    activity_date=activity_date,
+                )
+                db.session.add(a)
+                db.session.commit()
+                flash("Activity added (no media).", "success")
         elif action == "edit":
             a = Activity.query.get(request.form.get("id"))
             if a:
@@ -1415,8 +1451,9 @@ def admin_activities():
                 a.is_active = "is_active" in request.form
                 if request.form.get("activity_date"):
                     a.activity_date = datetime.strptime(request.form["activity_date"], "%Y-%m-%d").date()
-                if "image" in request.files and request.files["image"].filename:
-                    result = upload_image(request.files["image"], folder="newvisionacademy/activities")
+                media = request.files.get("media") or request.files.get("image")
+                if media and media.filename:
+                    result = upload_file(media, folder="newvisionacademy/activities") or upload_image(media, folder="newvisionacademy/activities")
                     if result:
                         a.image_url = result["url"]
                         a.image_public_id = result.get("public_id", "")
@@ -1425,6 +1462,8 @@ def admin_activities():
         elif action == "delete":
             a = Activity.query.get(request.form.get("id"))
             if a:
+                if a.image_public_id:
+                    delete_image(a.image_public_id)
                 db.session.delete(a)
                 db.session.commit()
                 flash("Activity deleted.", "success")
@@ -1565,7 +1604,16 @@ def admin_notices():
                 published_at=now_nepal(),
             )
             if request.form.get("expiry_date"):
-                n.expiry_date = datetime.strptime(request.form["expiry_date"], "%Y-%m-%d")
+                try:
+                    n.expiry_date = datetime.strptime(request.form["expiry_date"], "%Y-%m-%d")
+                except ValueError:
+                    pass
+            # PDF / document / image upload for notice
+            pdf_file = request.files.get("pdf_file")
+            if pdf_file and pdf_file.filename:
+                result = upload_file(pdf_file, folder="newvisionacademy/notices")
+                if result:
+                    n.pdf_url = result["url"]
             db.session.add(n)
             db.session.commit()
             if n.is_active:

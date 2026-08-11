@@ -1,5 +1,5 @@
 {% include "admin/_layout_start.html" %}
-<h4 class="mb-4">Notices</h4>
+<h4 class="mb-4">Notices <small class="text-muted">(नेपाली / English)</small></h4>
 <div class="stat-card mb-4">
 <form method="POST" class="row g-2 align-items-end">
 <input type="hidden" name="action" value="ticker">
@@ -11,21 +11,30 @@
 </div>
 <div class="row g-4">
 <div class="col-lg-5"><div class="stat-card">
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 <input type="hidden" name="action" value="add">
-<input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
-<textarea name="description" class="form-control mb-2" rows="3" placeholder="Description"></textarea>
-<input type="text" name="category" class="form-control mb-2" value="General">
-<input type="text" name="external_url" class="form-control mb-2" placeholder="External URL">
-<input type="date" name="expiry_date" class="form-control mb-2">
+<input type="text" name="title" class="form-control mb-2" placeholder="Title / शीर्षक (Nepali or English)" required lang="ne">
+<textarea name="description" class="form-control mb-2" rows="4" placeholder="Description / विवरण (नेपाली वा अंग्रेजीमा लेख्नुहोस्)" lang="ne"></textarea>
+<input type="text" name="category" class="form-control mb-2" value="General" placeholder="Category">
+<input type="text" name="external_url" class="form-control mb-2" placeholder="External URL (optional)">
+<label class="form-label small mb-1">Upload PDF / Image / File (notice document)</label>
+<input type="file" name="pdf_file" class="form-control mb-2" accept=".pdf,image/*,.doc,.docx,.jpg,.jpeg,.png">
+<input type="date" name="expiry_date" class="form-control mb-2" title="Expiry date">
 <div class="form-check"><input type="checkbox" name="is_important" class="form-check-input" id="ni"><label for="ni">Important</label></div>
 <div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="na"><label for="na">Active</label></div>
 <button type="submit" class="btn btn-primary btn-sm">Add Notice</button>
-</form></div></div>
+</form>
+<p class="small text-muted mt-2">नेपालीमा टाइप गर्न सिस्टमको नेपाली किबोर्ड (Win + Space) वा Google Input Tools प्रयोग गर्नुहोस्। PDF/फाइल पनि अपलोड गर्न सकिन्छ।</p>
+</div></div>
 <div class="col-lg-7">
 {% for n in notices %}
-<div class="stat-card mb-2 d-flex justify-content-between">
-<div>{% if n.is_important %}<span class="badge bg-danger">Important</span>{% endif %} <strong>{{ n.title }}</strong><br><small class="text-muted">{{ format_date(n.published_at) }}</small></div>
+<div class="stat-card mb-2 d-flex justify-content-between align-items-start">
+<div>
+{% if n.is_important %}<span class="badge bg-danger">Important</span>{% endif %}
+<strong>{{ n.title }}</strong><br>
+<small class="text-muted">{{ format_date(n.published_at) }}</small>
+{% if n.pdf_url %}<br><a href="{{ n.pdf_url }}" target="_blank" class="small">View attached file</a>{% endif %}
+</div>
 <form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ n.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
 </div>
 {% else %}<p class="text-muted">No notices.</p>{% endfor %}

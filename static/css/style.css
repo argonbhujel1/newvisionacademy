@@ -17,7 +17,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', 'Noto Sans Devanagari', sans-serif;
   color: var(--text);
   background: var(--white);
   line-height: 1.6;
