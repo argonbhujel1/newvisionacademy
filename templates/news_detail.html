@@ -21,14 +21,14 @@
 {% set view_url = news.attachment_url|proxy_url %}
 {% set dl_url = news.attachment_url|proxy_url(true) %}
 {% set u = raw_url|lower %}
-{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg') or '/image/upload/' in u %}
+{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg') or ('/image/upload/' in u and '.pdf' not in u) %}
 {% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or u.endswith('.m4v') or u.endswith('.avi') or '/video/upload/' in u %}
 {% set is_audio = u.endswith('.mp3') or u.endswith('.wav') or u.endswith('.ogg') or u.endswith('.m4a') %}
 {% set is_office = u.endswith('.doc') or u.endswith('.docx') or u.endswith('.xls') or u.endswith('.xlsx') or u.endswith('.ppt') or u.endswith('.pptx') %}
 {% set is_text = u.endswith('.txt') or u.endswith('.csv') or u.endswith('.rtf') %}
 {% set is_archive = u.endswith('.zip') or u.endswith('.rar') or u.endswith('.7z') %}
-{# Cloudinary raw URLs often lack extension (stream_xxx) — treat as PDF for notices/news #}
-{% set is_pdf = u.endswith('.pdf') or ('pdf' in u) or ('/raw/upload/' in u and not is_img and not is_video and not is_audio and not is_office and not is_text and not is_archive) %}
+{% set is_pdf = u.endswith('.pdf') or 'pdf' in u or ('/raw/upload/' in u and not is_img and not is_video and not is_audio and not is_office and not is_text and not is_archive) %}
+{% set is_doc_preview = is_pdf or is_office or is_text %}
 <div class="mt-4 p-3 border rounded shadow-sm bg-white">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h5 class="mb-0"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
@@ -45,77 +45,29 @@
   <video src="{{ view_url }}" controls playsinline preload="metadata" class="w-100 rounded" style="max-height:80vh;background:#000"></video>
   {% elif is_audio %}
   <audio src="{{ view_url }}" controls class="w-100"></audio>
-  {% elif is_pdf %}
-  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfPrev">‹ Prev</button>
-    <span class="small">Page <span id="pdfPage">1</span> / <span id="pdfPages">–</span></span>
-    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfNext">Next ›</button>
-  </div>
-  <div class="border rounded bg-light text-center overflow-auto" style="max-height:85vh;min-height:360px">
-    <canvas id="pdfCanvas" style="max-width:100%;margin:0 auto"></canvas>
-    <p id="pdfStatus" class="text-muted p-3 mb-0">Loading PDF…</p>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>
-  (function(){
-    var url = {{ raw_url|tojson }};
-    var status = document.getElementById('pdfStatus');
-    var canvas = document.getElementById('pdfCanvas');
-    if (!window.pdfjsLib) { status.textContent = 'PDF viewer failed. Use Download.'; return; }
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    var pdfDoc = null, pageNum = 1, scale = 1.3;
-    function render(n) {
-      pdfDoc.getPage(n).then(function(page) {
-        var vp = page.getViewport({ scale: scale });
-        var ctx = canvas.getContext('2d');
-        canvas.height = vp.height; canvas.width = vp.width;
-        page.render({ canvasContext: ctx, viewport: vp });
-        document.getElementById('pdfPage').textContent = n;
-        status.style.display = 'none';
-      });
-    }
-    function loadPdf(u) {
-      return fetch(u, { mode: 'cors' }).then(function(r){
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.arrayBuffer();
-      }).then(function(buf){ return pdfjsLib.getDocument({ data: buf }).promise; });
-    }
-    var proxyUrl = {{ view_url|tojson }};
-    loadPdf(url).catch(function(){ return loadPdf(proxyUrl); }).then(function(pdf){
-      pdfDoc = pdf; document.getElementById('pdfPages').textContent = pdf.numPages; render(1);
-    }).catch(function(e){ console.error(e); status.textContent = 'PDF preview unavailable. Please use Download.'; });
-    document.getElementById('pdfPrev').onclick = function(){ if (pdfDoc && pageNum > 1) { pageNum--; render(pageNum); } };
-    document.getElementById('pdfNext').onclick = function(){ if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; render(pageNum); } };
-  })();
-  </script>
-  {% elif is_office %}
+  {% elif is_doc_preview %}
   <div class="border rounded overflow-hidden bg-light" style="height:85vh">
-    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src={{ raw_url|urlencode }}"
-      title="Office" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+    <iframe
+      src="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true"
+      title="Document"
+      class="w-100 h-100"
+      style="border:0"
+      allowfullscreen></iframe>
   </div>
-  <p class="small text-muted mt-2 mb-0">
-    <a href="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true" target="_blank" rel="noopener">Google viewer</a>
-    · नदेखिए Download गर्नुहोस्
-  </p>
-  {% elif is_text %}
-  <div class="border rounded bg-light p-3" style="max-height:70vh;overflow:auto">
-    <pre id="textPreview" class="mb-0 small" style="white-space:pre-wrap;word-break:break-word">Loading…</pre>
-  </div>
-  <script>
-  fetch({{ view_url|tojson }}).then(function(r){ return r.text(); }).then(function(t){
-    document.getElementById('textPreview').textContent = t;
-  }).catch(function(){ document.getElementById('textPreview').textContent = 'Could not load. Use Download.'; });
-  </script>
   {% elif is_archive %}
   <div class="text-center p-5 border rounded bg-light">
     <i class="fas fa-file-archive fa-4x text-secondary mb-3"></i>
     <p class="mb-2 fw-semibold">Archive (ZIP / RAR)</p>
-    <p class="text-muted small">Download गरेर खोल्नुहोस्।</p>
+    <p class="text-muted small mb-0">Download गरेर खोल्नुहोस्।</p>
   </div>
   {% else %}
-  <div class="text-center p-4 border rounded bg-light">
-    <i class="fas fa-file fa-3x text-secondary mb-2"></i>
-    <p class="text-muted">Use Download to open this file.</p>
+  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
+    <iframe
+      src="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true"
+      title="File"
+      class="w-100 h-100"
+      style="border:0"
+      allowfullscreen></iframe>
   </div>
   {% endif %}
 </div>
