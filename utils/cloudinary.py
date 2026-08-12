@@ -127,12 +127,12 @@ def upload_file(file, folder="newvisionacademy/docs"):
 
     if name_l.endswith(video_exts):
         resource_type = "video"
-    elif name_l.endswith(image_exts):
+    elif name_l.endswith(image_exts) or name_l.endswith(".pdf"):
+        # PDF as image → pages deliverable as PNG even when PDF ACL is blocked
         resource_type = "image"
-    elif name_l.endswith(raw_exts) or name_l.endswith(".pdf"):
+    elif name_l.endswith(raw_exts):
         resource_type = "raw"
     else:
-        # Unknown: prefer raw so binary files are not forced through image pipeline
         resource_type = "raw"
 
     payload = _get_file_payload(file)
@@ -196,9 +196,7 @@ def upload_file(file, folder="newvisionacademy/docs"):
         # (only helps if asset was stored as raw; new uploads should already be raw)
         fmt = (result.get("format") or "").lower()
         rtype = result.get("resource_type") or resource_type
-        if (name_l.endswith(".pdf") or fmt == "pdf") and "/image/upload/" in url:
-            url = url.replace("/image/upload/", "/raw/upload/", 1)
-            rtype = "raw"
+        # Keep PDF on image/upload so page-as-image preview works
 
         # Ensure URL path ends with extension when we know it
         if ext and ext not in url.split("?")[0].lower():
@@ -241,8 +239,7 @@ def upload_file(file, folder="newvisionacademy/docs"):
             )
             url = result.get("secure_url") or result.get("url")
             if url:
-                if name_l.endswith(".pdf") and "/image/upload/" in url:
-                    url = url.replace("/image/upload/", "/raw/upload/", 1)
+                # keep pdf as image upload
                 return {
                     "url": url,
                     "public_id": result.get("public_id", ""),

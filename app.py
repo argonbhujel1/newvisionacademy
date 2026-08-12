@@ -26,17 +26,10 @@ app.config.from_object(Config)
 
 @app.template_filter("fix_media_url")
 def fix_media_url(url):
-    """Fix Cloudinary PDF URLs wrongly stored as /image/upload/ → /raw/upload/."""
+    """Normalize media URLs. PDFs stay on /image/upload/ for page-as-image preview."""
     if not url:
         return url
-    u = str(url)
-    low = u.lower()
-    if low.endswith(".pdf") or ".pdf?" in low or "/pdf" in low:
-        if "/image/upload/" in u:
-            u = u.replace("/image/upload/", "/raw/upload/", 1)
-        # Also strip transformation segments that break raw PDFs
-        # e.g. /raw/upload/c_scale,w_500/v123/... should not apply to PDF
-    return u
+    return str(url)
 
 
 @app.template_filter("download_url")
@@ -420,6 +413,31 @@ class NoticeTickerSetting(db.Model):
 # Helpers
 # ---------------------------------------------------------------------------
 
+@app.template_filter("pdf_page")
+def pdf_page_image_url(url, page=1, width=900):
+    """Convert Cloudinary PDF (image resource) URL to a page preview image URL."""
+    if not url:
+        return url
+    u = str(url)
+    # Ensure image delivery path
+    if "/raw/upload/" in u:
+        u = u.replace("/raw/upload/", "/image/upload/", 1)
+    if "/upload/" not in u:
+        return u
+    # Insert transformation: page N as PNG
+    # /image/upload/v123/foo.pdf  → /image/upload/f_png,pg_N,w_W/v123/foo.pdf
+    # or change extension to .png
+    parts = u.split("/upload/", 1)
+    if len(parts) != 2:
+        return u
+    base, rest = parts
+    # strip existing transformation segment if simple version path
+    transform = f"f_png,pg_{int(page)},w_{int(width)}"
+    # rest may start with transformations or v123/
+    return f"{base}/upload/{transform}/{rest}"
+
+
+
 def get_profile():
     profile = SchoolProfile.query.first()
     if not profile:
@@ -785,8 +803,7 @@ def media_file():
 
     url = raw_url
     low = url.lower()
-    if (".pdf" in low or "/raw/upload/" in url) and "/image/upload/" in url:
-        url = url.replace("/image/upload/", "/raw/upload/", 1)
+    # Do not force PDF to raw — image/upload allows page-as-PNG preview
 
     name = (request.args.get("name") or "").strip()
 

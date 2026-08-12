@@ -44,68 +44,53 @@
   <video src="{{ view_url }}" controls playsinline preload="metadata" class="w-100 rounded" style="max-height:80vh;background:#000"></video>
   {% elif is_audio %}
   <audio src="{{ view_url }}" controls class="w-100"></audio>
-  {% elif is_pdf %}
-  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfPrev">‹ Prev</button>
-    <span class="small">Page <span id="pdfPage">1</span> / <span id="pdfPages">–</span></span>
-    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfNext">Next ›</button>
+    {% elif is_pdf %}
+  {# Preview PDF pages as images (works even when Cloudinary blocks PDF binary delivery) #}
+  <div class="border rounded bg-light p-2" id="pdfPagesBox">
+    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfPrev">‹ Prev</button>
+      <span class="small">Page <span id="pdfPage">1</span></span>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfNext">Next ›</button>
+    </div>
+    <div class="text-center overflow-auto" style="max-height:85vh;min-height:320px;background:#525659">
+      <img id="pdfPageImg" src="{{ raw_url|pdf_page(1) }}" alt="PDF page"
+           class="img-fluid" style="max-width:100%;box-shadow:0 2px 12px rgba(0,0,0,.35)"
+           onerror="this.onerror=null; document.getElementById('pdfErr').classList.remove('d-none'); this.style.display='none';">
+      <p id="pdfErr" class="d-none text-white p-4 mb-0">Page preview unavailable. Use Download.</p>
+    </div>
   </div>
-  <div class="border rounded bg-light text-center overflow-auto" style="max-height:85vh;min-height:360px">
-    <canvas id="pdfCanvas" style="max-width:100%;margin:0 auto"></canvas>
-    <p id="pdfStatus" class="text-muted p-3 mb-0">Loading PDF…</p>
-    <iframe id="pdfFallback" class="d-none w-100" style="height:85vh;border:0" title="PDF"></iframe>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
   (function(){
-    var proxyUrl = {{ view_url|tojson }};
-    var rawUrl = {{ raw_url|tojson }};
-    var gview = 'https://docs.google.com/gview?url=' + encodeURIComponent(rawUrl) + '&embedded=true';
-    var status = document.getElementById('pdfStatus');
-    var canvas = document.getElementById('pdfCanvas');
-    var fallback = document.getElementById('pdfFallback');
-    var pdfDoc = null, pageNum = 1, scale = 1.25;
-    function showFallback() {
-      canvas.style.display = 'none';
-      document.getElementById('pdfPrev').style.display = 'none';
-      document.getElementById('pdfNext').style.display = 'none';
-      status.style.display = 'none';
-      fallback.classList.remove('d-none');
-      fallback.src = gview;
+    var page = 1, maxTry = 30;
+    var img = document.getElementById('pdfPageImg');
+    var label = document.getElementById('pdfPage');
+    var base = {{ raw_url|tojson }};
+    function pageUrl(n) {
+      // Build Cloudinary page image URL
+      var u = base;
+      if (u.indexOf('/raw/upload/') >= 0) u = u.replace('/raw/upload/', '/image/upload/');
+      if (u.indexOf('/upload/') < 0) return u;
+      var parts = u.split('/upload/');
+      return parts[0] + '/upload/f_png,pg_' + n + ',w_900/' + parts[1];
     }
-    function render(n) {
-      pdfDoc.getPage(n).then(function(page) {
-        var vp = page.getViewport({ scale: scale });
-        var ctx = canvas.getContext('2d');
-        canvas.height = vp.height; canvas.width = vp.width;
-        page.render({ canvasContext: ctx, viewport: vp });
-        document.getElementById('pdfPage').textContent = n;
-        status.style.display = 'none';
-      });
+    function show(n) {
+      page = n;
+      label.textContent = n;
+      img.style.display = '';
+      document.getElementById('pdfErr').classList.add('d-none');
+      img.onerror = function() {
+        if (n > 1) { /* past last page */ page = n - 1; label.textContent = page; return; }
+        document.getElementById('pdfErr').classList.remove('d-none');
+        img.style.display = 'none';
+      };
+      img.onload = function(){ document.getElementById('pdfErr').classList.add('d-none'); };
+      img.src = pageUrl(n);
     }
-    function tryPdfJs(url) {
-      return fetch(url, { credentials: 'same-origin' }).then(function(r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.arrayBuffer();
-      }).then(function(buf) {
-        if (buf.byteLength < 5) throw new Error('empty');
-        var head = new Uint8Array(buf.slice(0, 5));
-        var sig = String.fromCharCode.apply(null, head);
-        if (sig.indexOf('%PDF') !== 0) throw new Error('not pdf');
-        return pdfjsLib.getDocument({ data: buf }).promise;
-      });
-    }
-    if (!window.pdfjsLib) { showFallback(); return; }
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    tryPdfJs(proxyUrl).catch(function(){ return tryPdfJs(rawUrl); }).then(function(pdf) {
-      pdfDoc = pdf;
-      document.getElementById('pdfPages').textContent = pdf.numPages;
-      render(1);
-    }).catch(function(e) { console.warn(e); showFallback(); });
-    document.getElementById('pdfPrev').onclick = function(){ if (pdfDoc && pageNum > 1) { pageNum--; render(pageNum); } };
-    document.getElementById('pdfNext').onclick = function(){ if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; render(pageNum); } };
+    document.getElementById('pdfPrev').onclick = function(){ if (page > 1) show(page - 1); };
+    document.getElementById('pdfNext').onclick = function(){ if (page < maxTry) show(page + 1); };
   })();
   </script>
+
   {% elif is_office or is_text %}
   <div class="border rounded overflow-hidden bg-light" style="height:85vh">
     <iframe src="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true"
