@@ -1636,6 +1636,72 @@ def admin_news():
     return render_template("admin/news.html", news_list=items)
 
 
+
+@app.route("/admin/subscribers", methods=["GET", "POST"])
+@admin_required
+def admin_subscribers():
+    """Manage student / parent email list for notice & news auto-mail."""
+    import re
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "bulk_add":
+            raw = request.form.get("emails", "") or ""
+            # Split by newline, comma, semicolon, space
+            parts = re.split(r"[\s,;]+", raw)
+            added = 0
+            skipped = 0
+            for p in parts:
+                email = (p or "").strip().lower()
+                if not email or "@" not in email or "." not in email.split("@")[-1]:
+                    continue
+                if len(email) > 120:
+                    continue
+                existing = NewsletterSubscriber.query.filter_by(email=email).first()
+                if existing:
+                    if not existing.is_active:
+                        existing.is_active = True
+                        added += 1
+                    else:
+                        skipped += 1
+                    continue
+                db.session.add(NewsletterSubscriber(email=email, is_active=True))
+                added += 1
+            db.session.commit()
+            flash(f"Saved {added} email(s). {skipped} already existed.", "success")
+        elif action == "add_one":
+            email = (request.form.get("email") or "").strip().lower()
+            if email and "@" in email:
+                existing = NewsletterSubscriber.query.filter_by(email=email).first()
+                if existing:
+                    existing.is_active = True
+                    flash("Email already in list (activated).", "info")
+                else:
+                    db.session.add(NewsletterSubscriber(email=email, is_active=True))
+                    flash("Email added.", "success")
+                db.session.commit()
+            else:
+                flash("Invalid email.", "danger")
+        elif action == "delete":
+            s = NewsletterSubscriber.query.get(request.form.get("id"))
+            if s:
+                db.session.delete(s)
+                db.session.commit()
+                flash("Email removed.", "success")
+        elif action == "toggle":
+            s = NewsletterSubscriber.query.get(request.form.get("id"))
+            if s:
+                s.is_active = not s.is_active
+                db.session.commit()
+                flash("Status updated.", "success")
+        elif action == "clear_all":
+            NewsletterSubscriber.query.delete()
+            db.session.commit()
+            flash("All emails cleared.", "success")
+        return redirect(url_for("admin_subscribers"))
+    items = NewsletterSubscriber.query.order_by(NewsletterSubscriber.created_at.desc()).all()
+    return render_template("admin/subscribers.html", subscribers=items)
+
+
 @app.route("/admin/notices", methods=["GET", "POST"])
 @admin_required
 def admin_notices():
