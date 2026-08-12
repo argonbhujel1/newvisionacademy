@@ -110,8 +110,8 @@ def upload_image(file, folder="newvisionacademy", public_id=None, transformation
 
 def upload_file(file, folder="newvisionacademy/docs"):
     """
-    Upload any file (PDF, image, video, doc) to Cloudinary.
-    Uses resource_type=auto and chunked upload for large files (videos).
+    Upload any file (PDF, image, video, doc) to Cloudinary with correct resource_type.
+    PDFs/docs MUST use resource_type=raw so URL is /raw/upload/ (not /image/upload/).
     Returns dict {url, public_id, format, resource_type} or None on failure.
     """
     if not file:
@@ -120,67 +120,54 @@ def upload_file(file, folder="newvisionacademy/docs"):
     if filename is not None and not str(filename).strip():
         return None
 
-    # Detect likely resource type from extension for better reliability
     name_l = str(filename).lower()
     video_exts = (".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v", ".3gp", ".mpeg", ".mpg")
     image_exts = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".heic", ".heif")
-    raw_exts = (".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", ".csv", ".zip", ".rar")
+    raw_exts = (".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", ".csv", ".zip", ".rar", ".rtf")
+
     if name_l.endswith(video_exts):
         resource_type = "video"
     elif name_l.endswith(image_exts):
         resource_type = "image"
-    elif name_l.endswith(raw_exts):
-        resource_type = "raw"  # PDF/docs – public raw delivery for view/download
+    elif name_l.endswith(raw_exts) or name_l.endswith(".pdf"):
+        resource_type = "raw"
     else:
-        resource_type = "auto"
+        # Unknown: prefer raw so binary files are not forced through image pipeline
+        resource_type = "raw"
 
     payload = _get_file_payload(file)
     if payload is None:
         return None
 
     try:
-        # Estimate size for chunked upload decision
-        size = None
-        try:
-            if hasattr(file, "content_length") and file.content_length:
-                size = file.content_length
-            elif hasattr(file, "seek") and hasattr(file, "tell"):
-                pos = file.tell()
-                file.seek(0, 2)
-                size = file.tell()
-                file.seek(pos)
-            stream = getattr(file, "stream", None)
-            if size is None and stream is not None and hasattr(stream, "seek"):
-                pos = stream.tell()
-                stream.seek(0, 2)
-                size = stream.tell()
-                stream.seek(0)
-        except Exception:
-            size = None
-
         options = {
             "folder": folder,
             "resource_type": resource_type,
             "overwrite": True,
             "invalidate": True,
-            "access_mode": "public",
+            "use_filename": True,
+            "unique_filename": True,
         }
-        # Keep original extension in public_id for correct Content-Type
-        if resource_type == "raw" and filename:
-            import re as _re
-            from werkzeug.utils import secure_filename as _sf
-            safe = _sf(str(filename))
-            base = _re.sub(r"[^a-zA-Z0-9._-]", "_", safe)[:80]
-            if base:
-                options["public_id"] = base.rsplit(".", 1)[0] if "." in base else base
-                # Cloudinary raw uses format from filename when use_filename is set
-                options["use_filename"] = True
-                options["unique_filename"] = True
 
-        # Chunked upload for files > ~8MB (videos especially)
-        use_large = size is not None and size > 8 * 1024 * 1024
-        if use_large or resource_type == "video":
-            options["chunk_size"] = 6 * 1024 * 1024  # 6 MB chunks
+        # Large videos: chunked upload
+        size = None
+        try:
+            stream = getattr(file, "stream", None)
+            if stream is not None and hasattr(stream, "seek"):
+                pos = stream.tell()
+                stream.seek(0, 2)
+                size = stream.tell()
+                stream.seek(0)
+            elif hasattr(file, "seek") and hasattr(file, "tell"):
+                pos = file.tell()
+                file.seek(0, 2)
+                size = file.tell()
+                file.seek(0)
+        except Exception:
+            size = None
+
+        if resource_type == "video" or (size and size > 8 * 1024 * 1024):
+            options["chunk_size"] = 6 * 1024 * 1024
             result = cloudinary.uploader.upload_large(payload, **options)
         else:
             result = cloudinary.uploader.upload(payload, **options)
@@ -190,9 +177,14 @@ def upload_file(file, folder="newvisionacademy/docs"):
             current_app.logger.error("Cloudinary returned no URL: %s", result)
             return None
 
-        # Prefer inline-friendly URL for PDFs (avoid forced download when possible)
+        # Safety: if PDF somehow landed on /image/upload/, rewrite to /raw/upload/
+        # (only helps if asset was stored as raw; new uploads should already be raw)
         fmt = (result.get("format") or "").lower()
         rtype = result.get("resource_type") or resource_type
+        if (name_l.endswith(".pdf") or fmt == "pdf") and "/image/upload/" in url:
+            url = url.replace("/image/upload/", "/raw/upload/", 1)
+            rtype = "raw"
+
         return {
             "url": url,
             "public_id": result.get("public_id", ""),
@@ -202,23 +194,32 @@ def upload_file(file, folder="newvisionacademy/docs"):
         }
     except Exception as e:
         current_app.logger.error("Cloudinary file upload error: %s", e, exc_info=True)
-        # Fallback: try simple auto upload without chunking
+        # Explicit raw retry for PDFs/docs (do NOT fall back to image)
         try:
             payload2 = _get_file_payload(file)
+            rt = "raw" if (name_l.endswith(raw_exts) or name_l.endswith(".pdf")) else "auto"
+            if name_l.endswith(video_exts):
+                rt = "video"
+            elif name_l.endswith(image_exts):
+                rt = "image"
             result = cloudinary.uploader.upload(
                 payload2,
                 folder=folder,
-                resource_type="auto",
+                resource_type=rt,
                 overwrite=True,
                 invalidate=True,
+                use_filename=True,
+                unique_filename=True,
             )
             url = result.get("secure_url") or result.get("url")
             if url:
+                if name_l.endswith(".pdf") and "/image/upload/" in url:
+                    url = url.replace("/image/upload/", "/raw/upload/", 1)
                 return {
                     "url": url,
                     "public_id": result.get("public_id", ""),
                     "format": result.get("format"),
-                    "resource_type": result.get("resource_type", "auto"),
+                    "resource_type": result.get("resource_type", rt),
                 }
         except Exception as e2:
             current_app.logger.error("Cloudinary fallback upload error: %s", e2, exc_info=True)

@@ -24,13 +24,29 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 
+@app.template_filter("fix_media_url")
+def fix_media_url(url):
+    """Fix Cloudinary PDF URLs wrongly stored as /image/upload/ → /raw/upload/."""
+    if not url:
+        return url
+    u = str(url)
+    low = u.lower()
+    if low.endswith(".pdf") or ".pdf?" in low or "/pdf" in low:
+        if "/image/upload/" in u:
+            u = u.replace("/image/upload/", "/raw/upload/", 1)
+        # Also strip transformation segments that break raw PDFs
+        # e.g. /raw/upload/c_scale,w_500/v123/... should not apply to PDF
+    return u
+
+
 @app.template_filter("download_url")
 def cloudinary_download_url(url):
     """Force download disposition on Cloudinary URLs when possible."""
-    if not url or "cloudinary.com" not in str(url):
+    if not url:
         return url
-    u = str(url)
-    # Insert fl_attachment after /upload/
+    u = fix_media_url(url)
+    if "cloudinary.com" not in u:
+        return u
     if "/upload/" in u and "fl_attachment" not in u:
         return u.replace("/upload/", "/upload/fl_attachment/", 1)
     return u

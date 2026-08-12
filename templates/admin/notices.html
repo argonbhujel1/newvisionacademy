@@ -33,7 +33,7 @@
 {% if n.is_important %}<span class="badge bg-danger">Important</span>{% endif %}
 <strong>{{ n.title }}</strong><br>
 <small class="text-muted">{{ format_date(n.published_at) }}</small>
-{% if n.pdf_url %}<br><a href="{{ n.pdf_url }}" target="_blank" class="small"><i class="fas fa-paperclip"></i> View attached file</a>{% endif %}
+{% if n.pdf_url|fix_media_url %}<br><a href="{{ n.pdf_url|fix_media_url }}" target="_blank" class="small"><i class="fas fa-paperclip"></i> View attached file</a>{% endif %}
 </div>
 <form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ n.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
 </div>
