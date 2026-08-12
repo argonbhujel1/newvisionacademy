@@ -760,11 +760,13 @@ def news_detail(slug):
 
 
 
+
 @app.route("/media/file")
 def media_file():
-    """Redirect to Cloudinary (or stream small files). Avoids Vercel 502 on large PDFs."""
+    """Serve files for in-page preview (stream) or download (redirect to Cloudinary)."""
+    import urllib.request
     import urllib.parse
-    from flask import redirect as flask_redirect
+    from flask import redirect as flask_redirect, Response
 
     raw_url = (request.args.get("url") or "").strip()
     as_download = request.args.get("download") in ("1", "true", "yes")
@@ -783,22 +785,81 @@ def media_file():
 
     url = raw_url
     low = url.lower()
-    if (low.endswith(".pdf") or ".pdf" in low or "/raw/upload/" in url) and "/image/upload/" in url:
+    if (".pdf" in low or "/raw/upload/" in url) and "/image/upload/" in url:
         url = url.replace("/image/upload/", "/raw/upload/", 1)
 
-    # Force download via Cloudinary flag; include filename+extension when possible
     name = (request.args.get("name") or "").strip()
-    if as_download and "cloudinary.com" in url and "/upload/" in url:
-        if name:
-            safe = urllib.parse.quote(name[:80], safe=".")
-            if "fl_attachment" not in url:
-                url = url.replace("/upload/", f"/upload/fl_attachment:{safe}/", 1)
-            elif "fl_attachment:" not in url:
-                url = url.replace("/upload/fl_attachment/", f"/upload/fl_attachment:{safe}/", 1)
-        elif "fl_attachment" not in url:
-            url = url.replace("/upload/", "/upload/fl_attachment/", 1)
 
-    return flask_redirect(url, code=302)
+    # Download: redirect to Cloudinary (avoids Vercel body size / timeout issues)
+    if as_download:
+        if "cloudinary.com" in url and "/upload/" in url:
+            if name:
+                safe = urllib.parse.quote(name[:80], safe=".")
+                if "fl_attachment" not in url:
+                    url = url.replace("/upload/", f"/upload/fl_attachment:{safe}/", 1)
+                elif "fl_attachment:" not in url:
+                    url = url.replace("/upload/fl_attachment/", f"/upload/fl_attachment:{safe}/", 1)
+            elif "fl_attachment" not in url:
+                url = url.replace("/upload/", "/upload/fl_attachment/", 1)
+        return flask_redirect(url, code=302)
+
+    # View / preview: stream bytes so PDF.js can load same-origin (no CORS)
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; NVA-Media/1.0)",
+                "Accept": "*/*",
+            },
+        )
+        upstream = urllib.request.urlopen(req, timeout=45)
+        data = upstream.read()
+        upstream_ctype = (upstream.headers.get("Content-Type") or "").split(";")[0].strip()
+        upstream.close()
+    except Exception as e:
+        app.logger.error("media_file fetch error: %s url=%s", e, url)
+        # Last resort: redirect to original
+        return flask_redirect(url, code=302)
+
+    path = urllib.parse.urlparse(url).path.lower()
+    filename = path.rsplit("/", 1)[-1] or "file"
+    ctype = "application/octet-stream"
+
+    if data[:4] == b"%PDF":
+        ctype = "application/pdf"
+        if not filename.lower().endswith(".pdf"):
+            filename += ".pdf"
+    elif path.endswith(".pdf") or ".pdf" in path:
+        ctype = "application/pdf"
+    elif data[:3] == bytes([0xFF, 0xD8, 0xFF]):
+        ctype = "image/jpeg"
+    elif data[:4] == b"\x89PNG":
+        ctype = "image/png"
+    elif path.endswith((".jpg", ".jpeg")):
+        ctype = "image/jpeg"
+    elif path.endswith(".png"):
+        ctype = "image/png"
+    elif path.endswith(".mp4"):
+        ctype = "video/mp4"
+    elif upstream_ctype and "text/html" not in upstream_ctype:
+        ctype = upstream_ctype
+
+    if name:
+        filename = name.replace('"', "")[:120]
+
+    # Cap ~4MB for serverless safety; larger files redirect
+    if len(data) > 4 * 1024 * 1024:
+        return flask_redirect(url, code=302)
+
+    headers = {
+        "Content-Type": ctype,
+        "Content-Length": str(len(data)),
+        "Cache-Control": "public, max-age=86400",
+        "X-Content-Type-Options": "nosniff",
+        "Access-Control-Allow-Origin": "*",
+    }
+    # No Content-Disposition on view — prevents auto-download
+    return Response(data, headers=headers)
 
 
 @app.template_filter("proxy_url")
