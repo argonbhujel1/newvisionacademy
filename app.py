@@ -474,13 +474,15 @@ def notify_subscribers(update_type, title, summary="", link_path="/", file_url="
         subject = f"[{school}] New {update_type}: {title}"
 
         file_block = ""
-        if file_url:
+        if file_url or full_link:
+            # View always goes to website page (preview, no forced download on phone).
+            # Direct Cloudinary links on mobile often force auto-download.
+            view_href = full_link or file_url
             file_block = f"""
           <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin:16px 0">
-            <p style="margin:0 0 8px;font-weight:600;color:#0a2540">📎 Attached file</p>
-            <p style="margin:0 0 10px;font-size:13px;word-break:break-all;color:#4a5568">{file_url}</p>
-            <a href="{file_url}" style="background:#1e4d8c;color:#fff;padding:8px 14px;text-decoration:none;border-radius:6px;display:inline-block;margin-right:8px;font-size:14px">View / Open file</a>
-            <a href="{file_url}" style="background:#fff;color:#1e4d8c;padding:8px 14px;text-decoration:none;border-radius:6px;display:inline-block;border:1px solid #1e4d8c;font-size:14px">Download</a>
+            <p style="margin:0 0 8px;font-weight:600;color:#0a2540">📎 Attachment available</p>
+            <p style="margin:0 0 10px;font-size:13px;color:#4a5568">Website मा खोलेर हेर्न सकिन्छ। Download चाहियो भने page बाट Download थिच्नुहोस्।</p>
+            <a href="{view_href}" style="background:#1e4d8c;color:#fff;padding:10px 18px;text-decoration:none;border-radius:6px;display:inline-block;font-size:14px">View on website</a>
           </div>
             """
 
@@ -784,16 +786,17 @@ def media_file():
     if (low.endswith(".pdf") or ".pdf" in low or "/raw/upload/" in url) and "/image/upload/" in url:
         url = url.replace("/image/upload/", "/raw/upload/", 1)
 
-    # Force download via Cloudinary transformation flag (no server memory needed)
+    # Force download via Cloudinary flag; include filename+extension when possible
+    name = (request.args.get("name") or "").strip()
     if as_download and "cloudinary.com" in url and "/upload/" in url:
-        if "fl_attachment" not in url:
-            url = url.replace("/upload/", "/upload/fl_attachment/", 1)
-        # Prefer original filename if provided
-        name = (request.args.get("name") or "").strip()
-        if name and "fl_attachment:" not in url:
-            # fl_attachment:filename
+        if name:
             safe = urllib.parse.quote(name[:80], safe=".")
-            url = url.replace("/upload/fl_attachment/", f"/upload/fl_attachment:{safe}/", 1)
+            if "fl_attachment" not in url:
+                url = url.replace("/upload/", f"/upload/fl_attachment:{safe}/", 1)
+            elif "fl_attachment:" not in url:
+                url = url.replace("/upload/fl_attachment/", f"/upload/fl_attachment:{safe}/", 1)
+        elif "fl_attachment" not in url:
+            url = url.replace("/upload/", "/upload/fl_attachment/", 1)
 
     return flask_redirect(url, code=302)
 

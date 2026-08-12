@@ -140,13 +140,28 @@ def upload_file(file, folder="newvisionacademy/docs"):
         return None
 
     try:
+        import uuid as _uuid
+        from werkzeug.utils import secure_filename as _sf
+        import os as _os
+
+        # Always keep real extension in public_id (fixes stream_xxx without .pdf/.docx)
+        safe = _sf(str(filename)) or "file"
+        root, ext = _os.path.splitext(safe)
+        if not ext:
+            # recover extension from original name
+            _, ext2 = _os.path.splitext(str(filename).lower())
+            ext = ext2 if ext2 else ""
+        if not ext and resource_type == "raw":
+            ext = ".bin"
+        root = (root or "file")[:60]
+        public_name = f"{_uuid.uuid4().hex[:8]}_{root}{ext}"
+
         options = {
             "folder": folder,
             "resource_type": resource_type,
             "overwrite": True,
             "invalidate": True,
-            "use_filename": True,
-            "unique_filename": True,
+            "public_id": public_name,
         }
 
         # Large videos: chunked upload
@@ -185,12 +200,18 @@ def upload_file(file, folder="newvisionacademy/docs"):
             url = url.replace("/image/upload/", "/raw/upload/", 1)
             rtype = "raw"
 
+        # Ensure URL path ends with extension when we know it
+        if ext and ext not in url.split("?")[0].lower():
+            # Cloudinary raw public_id already includes ext; if missing, append for clients
+            if resource_type == "raw" and not url.lower().rstrip("/").endswith(ext.lower()):
+                pass  # public_id should already include it
         return {
             "url": url,
             "public_id": result.get("public_id", ""),
-            "format": fmt or result.get("format"),
+            "format": (fmt or result.get("format") or ext.lstrip(".")),
             "resource_type": rtype,
             "bytes": result.get("bytes"),
+            "original_filename": str(filename),
         }
     except Exception as e:
         current_app.logger.error("Cloudinary file upload error: %s", e, exc_info=True)
@@ -202,14 +223,21 @@ def upload_file(file, folder="newvisionacademy/docs"):
                 rt = "video"
             elif name_l.endswith(image_exts):
                 rt = "image"
+            import uuid as _uuid2
+            from werkzeug.utils import secure_filename as _sf2
+            import os as _os2
+            safe2 = _sf2(str(filename)) or "file"
+            r2, e2 = _os2.path.splitext(safe2)
+            if not e2:
+                _, e2 = _os2.path.splitext(str(filename).lower())
+            pname = f"{_uuid2.uuid4().hex[:8]}_{(r2 or 'file')[:60]}{e2 or ''}"
             result = cloudinary.uploader.upload(
                 payload2,
                 folder=folder,
                 resource_type=rt,
                 overwrite=True,
                 invalidate=True,
-                use_filename=True,
-                unique_filename=True,
+                public_id=pname,
             )
             url = result.get("secure_url") or result.get("url")
             if url:
