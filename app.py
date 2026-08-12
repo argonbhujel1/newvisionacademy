@@ -756,6 +756,130 @@ def news_detail(slug):
     return render_template("news_detail.html", news=item, related=related, seo=seo)
 
 
+
+@app.route("/media/file")
+def media_file():
+    """Proxy Cloudinary (or allowed) files with correct Content-Type so PDF/docs open properly."""
+    import urllib.request
+    import urllib.parse
+    from flask import Response, stream_with_context
+
+    raw_url = (request.args.get("url") or "").strip()
+    as_download = request.args.get("download") in ("1", "true", "yes")
+    if not raw_url:
+        abort(400)
+
+    # Security: only allow Cloudinary + our own domain
+    parsed = urllib.parse.urlparse(raw_url)
+    host = (parsed.hostname or "").lower()
+    allowed = (
+        host.endswith("cloudinary.com")
+        or host.endswith("res.cloudinary.com")
+        or host in ("localhost", "127.0.0.1")
+    )
+    if not allowed:
+        abort(403)
+
+    # Fix common broken PDF delivery path
+    url = raw_url
+    low = url.lower()
+    if (low.endswith(".pdf") or ".pdf?" in low) and "/image/upload/" in url:
+        url = url.replace("/image/upload/", "/raw/upload/", 1)
+
+    # Guess content-type from path
+    path = urllib.parse.urlparse(url).path.lower()
+    ctype = "application/octet-stream"
+    filename = path.rsplit("/", 1)[-1] or "file"
+    if path.endswith(".pdf") or ".pdf" in path:
+        ctype = "application/pdf"
+        if not filename.lower().endswith(".pdf"):
+            filename += ".pdf"
+    elif path.endswith((".jpg", ".jpeg")):
+        ctype = "image/jpeg"
+    elif path.endswith(".png"):
+        ctype = "image/png"
+    elif path.endswith(".gif"):
+        ctype = "image/gif"
+    elif path.endswith(".webp"):
+        ctype = "image/webp"
+    elif path.endswith(".mp4"):
+        ctype = "video/mp4"
+    elif path.endswith(".webm"):
+        ctype = "video/webm"
+    elif path.endswith(".mp3"):
+        ctype = "audio/mpeg"
+    elif path.endswith(".doc"):
+        ctype = "application/msword"
+    elif path.endswith(".docx"):
+        ctype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    elif path.endswith(".xls"):
+        ctype = "application/vnd.ms-excel"
+    elif path.endswith(".xlsx"):
+        ctype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    elif path.endswith(".ppt"):
+        ctype = "application/vnd.ms-powerpoint"
+    elif path.endswith(".pptx"):
+        ctype = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    elif path.endswith(".zip"):
+        ctype = "application/zip"
+
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "NewVisionAcademyMediaProxy/1.0",
+                "Accept": "*/*",
+            },
+        )
+        upstream = urllib.request.urlopen(req, timeout=60)
+        upstream_ctype = upstream.headers.get("Content-Type", "")
+        # Prefer our guessed type for PDFs (upstream may send text/plain wrongly)
+        if ctype == "application/pdf" or (upstream_ctype and "pdf" in upstream_ctype.lower()):
+            ctype = "application/pdf"
+        elif upstream_ctype and "text/html" not in upstream_ctype.lower() and "text/plain" not in upstream_ctype.lower():
+            # use upstream if it looks legitimate
+            if not path.endswith(".pdf"):
+                ctype = upstream_ctype.split(";")[0].strip() or ctype
+
+        data = upstream.read()
+        upstream.close()
+
+        # Validate PDF magic bytes
+        if ctype == "application/pdf" and data[:4] != b"%PDF":
+            # still serve but log
+            app.logger.warning("PDF proxy: missing %%PDF magic for %s", url)
+
+        disp = "attachment" if as_download else "inline"
+        # RFC 5987 filename
+        safe_name = filename.replace('"', "")
+        headers = {
+            "Content-Type": ctype,
+            "Content-Disposition": f'{disp}; filename="{safe_name}"',
+            "Content-Length": str(len(data)),
+            "Cache-Control": "public, max-age=86400",
+            "X-Content-Type-Options": "nosniff",
+        }
+        return Response(data, headers=headers)
+    except Exception as e:
+        app.logger.error("media_file proxy error: %s url=%s", e, url)
+        abort(502)
+
+
+@app.template_filter("proxy_url")
+def media_proxy_url(url, download=False):
+    """Build same-origin proxy URL so PDF opens with correct Content-Type."""
+    if not url:
+        return url
+    from urllib.parse import quote
+    fixed = fix_media_url(url)
+    q = quote(str(fixed), safe="")
+    base = f"/media/file?url={q}"
+    if download:
+        base += "&download=1"
+    return base
+
+
+
 @app.route("/notices")
 def notices():
     items = Notice.query.filter_by(is_active=True).order_by(Notice.published_at.desc()).all()
