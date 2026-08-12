@@ -21,13 +21,14 @@
 {% set view_url = news.attachment_url|proxy_url %}
 {% set dl_url = news.attachment_url|proxy_url(true) %}
 {% set u = raw_url|lower %}
-{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg') %}
+{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg') or '/image/upload/' in u %}
 {% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or u.endswith('.m4v') or u.endswith('.avi') or '/video/upload/' in u %}
 {% set is_audio = u.endswith('.mp3') or u.endswith('.wav') or u.endswith('.ogg') or u.endswith('.m4a') %}
-{% set is_pdf = u.endswith('.pdf') %}
 {% set is_office = u.endswith('.doc') or u.endswith('.docx') or u.endswith('.xls') or u.endswith('.xlsx') or u.endswith('.ppt') or u.endswith('.pptx') %}
 {% set is_text = u.endswith('.txt') or u.endswith('.csv') or u.endswith('.rtf') %}
 {% set is_archive = u.endswith('.zip') or u.endswith('.rar') or u.endswith('.7z') %}
+{# Cloudinary raw URLs often lack extension (stream_xxx) — treat as PDF for notices/news #}
+{% set is_pdf = u.endswith('.pdf') or ('pdf' in u) or ('/raw/upload/' in u and not is_img and not is_video and not is_audio and not is_office and not is_text and not is_archive) %}
 <div class="mt-4 p-3 border rounded shadow-sm bg-white">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h5 class="mb-0"><i class="fas fa-paperclip me-1"></i> Attachment</h5>

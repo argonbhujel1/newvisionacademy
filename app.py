@@ -844,12 +844,34 @@ def media_file():
         data = upstream.read()
         upstream.close()
 
-        # Validate PDF magic bytes
-        if ctype == "application/pdf" and data[:4] != b"%PDF":
-            # still serve but log
-            app.logger.warning("PDF proxy: missing %%PDF magic for %s", url)
+        # Detect real type from magic bytes (Cloudinary raw URLs often have no extension)
+        if data[:4] == b"%PDF":
+            ctype = "application/pdf"
+            if not filename.lower().endswith(".pdf"):
+                filename = (filename or "document") + ".pdf"
+        elif data[:3] == b"\xff\xd8\xff" or data[:3] == bytes([0xFF, 0xD8, 0xFF]):
+            ctype = "image/jpeg"
+            if not filename.lower().endswith((".jpg", ".jpeg")):
+                filename = (filename or "image") + ".jpg"
+        elif data[:8] == b"\x89PNG\r\n\x1a\n" or data[:4] == b"\x89PNG":
+            ctype = "image/png"
+            if not filename.lower().endswith(".png"):
+                filename = (filename or "image") + ".png"
+        elif data[:4] == b"PK\x03\x04" or data[:2] == b"PK":
+            # zip / docx / xlsx / pptx
+            if "word" in ctype or filename.endswith((".doc", ".docx")):
+                pass
+            elif ctype == "application/octet-stream":
+                ctype = "application/zip"
+                if "." not in filename:
+                    filename = (filename or "archive") + ".zip"
 
         safe_name = filename.replace('"', "")
+        # Prefer original name from query if provided
+        orig = (request.args.get("name") or "").strip()
+        if orig:
+            safe_name = orig.replace('"', "")[:120]
+
         headers = {
             "Content-Type": ctype,
             "Content-Length": str(len(data)),
@@ -857,7 +879,6 @@ def media_file():
             "X-Content-Type-Options": "nosniff",
         }
         # ONLY force download when explicitly requested.
-        # Do NOT set Content-Disposition on view — Chrome auto-downloads PDFs if present.
         if as_download:
             headers["Content-Disposition"] = f'attachment; filename="{safe_name}"'
         return Response(data, headers=headers)
@@ -867,7 +888,7 @@ def media_file():
 
 
 @app.template_filter("proxy_url")
-def media_proxy_url(url, download=False):
+def media_proxy_url(url, download=False, name=""):
     """Build same-origin proxy URL so PDF opens with correct Content-Type."""
     if not url:
         return url
@@ -877,6 +898,8 @@ def media_proxy_url(url, download=False):
     base = f"/media/file?url={q}"
     if download:
         base += "&download=1"
+    if name:
+        base += "&name=" + quote(str(name)[:120], safe="")
     return base
 
 
