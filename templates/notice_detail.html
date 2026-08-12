@@ -3,12 +3,44 @@
 <section class="page-banner"><div class="container"><h1>{{ notice.title }}</h1>
 <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
 <li class="breadcrumb-item"><a href="{{ url_for('notices') }}">Notices</a></li><li class="breadcrumb-item active">Detail</li></ol></nav></div></section>
-<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-8">
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-9">
 {% if notice.is_important %}<span class="badge bg-danger mb-2">Important</span>{% endif %}
 <p class="text-muted">{{ format_date(notice.published_at) }} · {{ notice.category }}</p>
-<div>{{ notice.description|safe }}</div>
+<div class="mb-4">{{ notice.description|safe }}</div>
 {% if notice.external_url %}<p class="mt-3"><a href="{{ notice.external_url }}" target="_blank" rel="noopener">External link →</a></p>{% endif %}
-{% if notice.pdf_url %}<p class="mt-2"><a href="{{ notice.pdf_url }}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-file-pdf me-1"></i> Download PDF</a></p>{% endif %}
+
+{% if notice.pdf_url %}
+{% set u = notice.pdf_url|lower %}
+{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or '/image/upload/' in u %}
+{% set is_pdf = u.endswith('.pdf') or 'pdf' in u or '/raw/upload/' in u %}
+{% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or '/video/upload/' in u %}
+<div class="mt-4 notice-attachment">
+  <h5 class="mb-3"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
+  {% if is_img %}
+  <div class="text-center mb-3">
+    <img src="{{ notice.pdf_url }}" alt="{{ notice.title }}" class="img-fluid rounded shadow-sm" style="max-height:70vh;object-fit:contain">
+  </div>
+  {% elif is_video %}
+  <div class="mb-3">
+    <video src="{{ notice.pdf_url }}" controls playsinline preload="metadata" class="w-100 rounded shadow-sm" style="max-height:70vh;background:#000"></video>
+  </div>
+  {% elif is_pdf %}
+  <div class="mb-3 border rounded overflow-hidden" style="height:75vh;background:#f5f5f5">
+    <iframe src="{{ notice.pdf_url }}#toolbar=1&navpanes=0" title="{{ notice.title }}" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+  </div>
+  <p class="small text-muted">PDF सीधै यहाँ देखिन्छ। नदेखिए download गरेर खोल्न सकिन्छ।</p>
+  {% else %}
+  <div class="alert alert-light border">
+    <i class="fas fa-file me-2"></i> File attached —
+    <a href="{{ notice.pdf_url }}" target="_blank" rel="noopener">Open in new tab</a>
+  </div>
+  {% endif %}
+  <a href="{{ notice.pdf_url }}" target="_blank" download class="btn btn-outline-primary btn-sm">
+    <i class="fas fa-download me-1"></i> Download file
+  </a>
+</div>
+{% endif %}
+
 <a href="{{ url_for('notices') }}" class="btn btn-outline-secondary mt-4">← All Notices</a>
 </div></div></div></section>
 {% endblock %}

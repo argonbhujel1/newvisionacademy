@@ -1406,12 +1406,25 @@ def admin_activities():
                 files = [request.files["image"]]
 
             uploaded = 0
-            valid_files = [f for f in files if f and f.filename]
+            failed = 0
+            valid_files = [f for f in files if f and getattr(f, "filename", None)]
             if valid_files:
                 for idx, f in enumerate(valid_files):
+                    # Reset stream so Cloudinary can read full file
+                    try:
+                        if hasattr(f, "stream") and hasattr(f.stream, "seek"):
+                            f.stream.seek(0)
+                        elif hasattr(f, "seek"):
+                            f.seek(0)
+                    except Exception:
+                        pass
                     result = upload_file(f, folder="newvisionacademy/activities")
                     if not result:
-                        # try image-specific upload as fallback
+                        try:
+                            if hasattr(f, "stream") and hasattr(f.stream, "seek"):
+                                f.stream.seek(0)
+                        except Exception:
+                            pass
                         result = upload_image(f, folder="newvisionacademy/activities")
                     a = Activity(
                         title=title if len(valid_files) == 1 else f"{title} ({idx + 1})",
@@ -1424,10 +1437,15 @@ def admin_activities():
                     if result:
                         a.image_url = result["url"]
                         a.image_public_id = result.get("public_id", "")
+                        uploaded += 1
+                    else:
+                        failed += 1
                     db.session.add(a)
-                    uploaded += 1
                 db.session.commit()
-                flash(f"{uploaded} activity item(s) added (photos/videos).", "success")
+                msg = f"{uploaded} file(s) uploaded successfully."
+                if failed:
+                    msg += f" {failed} failed (size/format/Cloudinary limit)."
+                flash(msg, "success" if uploaded else "warning")
             else:
                 # No media — still create one entry with title/description
                 a = Activity(

@@ -110,45 +110,125 @@ def upload_image(file, folder="newvisionacademy", public_id=None, transformation
 
 def upload_file(file, folder="newvisionacademy/docs"):
     """
-    Upload any file (PDF, image, doc) to Cloudinary as resource_type=auto.
-    Returns dict {url, public_id, format} or None on failure.
+    Upload any file (PDF, image, video, doc) to Cloudinary.
+    Uses resource_type=auto and chunked upload for large files (videos).
+    Returns dict {url, public_id, format, resource_type} or None on failure.
     """
     if not file:
         return None
     filename = getattr(file, "filename", None)
     if filename is not None and not str(filename).strip():
         return None
+
+    # Detect likely resource type from extension for better reliability
+    name_l = str(filename).lower()
+    video_exts = (".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v", ".3gp", ".mpeg", ".mpg")
+    image_exts = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".heic", ".heif")
+    if name_l.endswith(video_exts):
+        resource_type = "video"
+    elif name_l.endswith(image_exts):
+        resource_type = "image"
+    else:
+        resource_type = "auto"  # pdf, docs, etc.
+
     payload = _get_file_payload(file)
     if payload is None:
         return None
+
     try:
-        result = cloudinary.uploader.upload(
-            payload,
-            folder=folder,
-            resource_type="auto",
-            overwrite=True,
-            invalidate=True,
-        )
+        # Estimate size for chunked upload decision
+        size = None
+        try:
+            if hasattr(file, "content_length") and file.content_length:
+                size = file.content_length
+            elif hasattr(file, "seek") and hasattr(file, "tell"):
+                pos = file.tell()
+                file.seek(0, 2)
+                size = file.tell()
+                file.seek(pos)
+            stream = getattr(file, "stream", None)
+            if size is None and stream is not None and hasattr(stream, "seek"):
+                pos = stream.tell()
+                stream.seek(0, 2)
+                size = stream.tell()
+                stream.seek(0)
+        except Exception:
+            size = None
+
+        options = {
+            "folder": folder,
+            "resource_type": resource_type,
+            "overwrite": True,
+            "invalidate": True,
+        }
+
+        # Chunked upload for files > ~8MB (videos especially)
+        use_large = size is not None and size > 8 * 1024 * 1024
+        if use_large or resource_type == "video":
+            options["chunk_size"] = 6 * 1024 * 1024  # 6 MB chunks
+            result = cloudinary.uploader.upload_large(payload, **options)
+        else:
+            result = cloudinary.uploader.upload(payload, **options)
+
         url = result.get("secure_url") or result.get("url")
         if not url:
+            current_app.logger.error("Cloudinary returned no URL: %s", result)
             return None
+
+        # Prefer inline-friendly URL for PDFs (avoid forced download when possible)
+        fmt = (result.get("format") or "").lower()
+        rtype = result.get("resource_type") or resource_type
         return {
             "url": url,
             "public_id": result.get("public_id", ""),
-            "format": result.get("format"),
+            "format": fmt or result.get("format"),
+            "resource_type": rtype,
+            "bytes": result.get("bytes"),
         }
     except Exception as e:
         current_app.logger.error("Cloudinary file upload error: %s", e, exc_info=True)
+        # Fallback: try simple auto upload without chunking
+        try:
+            payload2 = _get_file_payload(file)
+            result = cloudinary.uploader.upload(
+                payload2,
+                folder=folder,
+                resource_type="auto",
+                overwrite=True,
+                invalidate=True,
+            )
+            url = result.get("secure_url") or result.get("url")
+            if url:
+                return {
+                    "url": url,
+                    "public_id": result.get("public_id", ""),
+                    "format": result.get("format"),
+                    "resource_type": result.get("resource_type", "auto"),
+                }
+        except Exception as e2:
+            current_app.logger.error("Cloudinary fallback upload error: %s", e2, exc_info=True)
         return None
 
 
-def delete_image(public_id):
-    """Delete an image from Cloudinary by public_id."""
+def delete_image(public_id, resource_type="image"):
+    """Delete a resource from Cloudinary by public_id (image/video/raw)."""
     if not public_id:
         return False
     try:
-        result = cloudinary.uploader.destroy(public_id)
-        return result.get("result") == "ok"
+        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        if result.get("result") == "ok":
+            return True
+        # Retry as video then raw
+        for rt in ("video", "raw", "auto"):
+            if rt == resource_type:
+                continue
+            try:
+                result = cloudinary.uploader.destroy(public_id, resource_type=rt)
+                if result.get("result") == "ok":
+                    return True
+            except Exception:
+                pass
+        return False
     except Exception as e:
         current_app.logger.error("Cloudinary delete error: %s", e)
         return False

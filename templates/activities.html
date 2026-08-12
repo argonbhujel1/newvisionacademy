@@ -9,17 +9,28 @@
 <div class="card-modern h-100">
 {% if a.image_url %}
   {% set url_l = a.image_url|lower %}
-  {% set is_video = url_l.endswith('.mp4') or url_l.endswith('.webm') or url_l.endswith('.mov') or url_l.endswith('.avi') or url_l.endswith('.mkv') or '/video/' in url_l or 'video/upload' in url_l %}
+  {% set is_video = url_l.endswith('.mp4') or url_l.endswith('.webm') or url_l.endswith('.mov') or url_l.endswith('.avi') or url_l.endswith('.mkv') or url_l.endswith('.m4v') or '/video/' in url_l or 'video/upload' in url_l %}
+  {% set is_pdf = url_l.endswith('.pdf') or ('/raw/upload/' in url_l and 'pdf' in url_l) %}
   {% if is_video %}
-  <video src="{{ a.image_url }}" class="card-img-top" controls playsinline preload="metadata" style="max-height:220px;object-fit:cover;width:100%"></video>
+  <video src="{{ a.image_url }}" class="card-img-top" controls playsinline preload="metadata" style="max-height:240px;object-fit:cover;width:100%;background:#000"></video>
+  {% elif is_pdf %}
+  <div class="d-flex align-items-center justify-content-center bg-light" style="height:180px">
+    <div class="text-center">
+      <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+      <div><a href="{{ a.image_url }}" target="_blank" class="btn btn-sm btn-outline-primary">View PDF</a></div>
+    </div>
+  </div>
   {% else %}
-  <img src="{{ a.image_url }}" class="card-img-top" alt="{{ a.title }}" loading="lazy">
+  <img src="{{ a.image_url }}" class="card-img-top" alt="{{ a.title }}" loading="lazy" style="max-height:240px;object-fit:cover;width:100%" onerror="this.parentElement.querySelector('.fallback-link')&&(this.style.display='none')">
   {% endif %}
 {% endif %}
 <div class="p-3">
 <span class="badge bg-secondary mb-2">{{ a.category }}</span>
 <h5>{{ a.title }}</h5>
 <p class="text-muted small">{{ a.description }}</p>
+{% if a.image_url %}
+<a href="{{ a.image_url }}" target="_blank" class="btn btn-sm btn-outline-secondary fallback-link" download><i class="fas fa-download me-1"></i> Download / Open</a>
+{% endif %}
 </div></div></div>
 {% else %}<p class="text-center text-muted">Activities will be listed here once published.</p>{% endfor %}
 </div></div></section>

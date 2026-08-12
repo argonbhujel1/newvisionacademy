@@ -2,18 +2,22 @@
 <h4 class="mb-4">Activities</h4>
 <div class="row g-4">
 <div class="col-lg-5"><div class="stat-card">
-<form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" id="activityForm">
 <input type="hidden" name="action" value="add">
 <input type="text" name="title" class="form-control mb-2" placeholder="Title (shared for bulk)" required>
 <textarea name="description" class="form-control mb-2" rows="2" placeholder="Description (optional)"></textarea>
 <input type="text" name="category" class="form-control mb-2" placeholder="Category" value="General">
 <input type="date" name="activity_date" class="form-control mb-2">
 <input type="number" name="sort_order" class="form-control mb-2" value="0" placeholder="Sort order">
-<label class="form-label small mb-1">Photos &amp; Videos (bulk upload from PC)</label>
-<input type="file" name="media" class="form-control mb-2" accept="image/*,video/*" multiple>
-<small class="text-muted d-block mb-2">Multiple photos and videos select गर्न सकिन्छ (Ctrl/Cmd + click). Each file = one activity entry.</small>
+<label class="form-label small mb-1">Photos, Videos &amp; Files (bulk from PC)</label>
+<input type="file" name="media" id="mediaInput" class="form-control mb-1" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,audio/*" multiple>
+<div id="fileCount" class="small text-muted mb-2">No files selected. Ctrl/Cmd+click for multiple.</div>
+<small class="text-muted d-block mb-2">
+• Windows: <kbd>Ctrl</kbd> + click · Mac: <kbd>Cmd</kbd> + click<br>
+• Shift + click = range select · धेरै files एकैचोटि upload हुन्छ
+</small>
 <div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="aa"><label for="aa">Active</label></div>
-<button type="submit" class="btn btn-primary btn-sm">Add / Upload</button>
+<button type="submit" class="btn btn-primary btn-sm" id="uploadBtn">Add / Upload</button>
 </form>
 </div></div>
 <div class="col-lg-7">
@@ -23,10 +27,13 @@
 {% if a.image_url %}
   {% set url_l = a.image_url|lower %}
   {% set is_video = url_l.endswith('.mp4') or url_l.endswith('.webm') or url_l.endswith('.mov') or url_l.endswith('.avi') or url_l.endswith('.mkv') or '/video/' in url_l or 'video/upload' in url_l %}
+  {% set is_pdf = url_l.endswith('.pdf') or '/raw/upload/' in url_l %}
   {% if is_video %}
-  <video src="{{ a.image_url }}" style="width:64px;height:48px;object-fit:cover;border-radius:6px" muted></video>
+  <video src="{{ a.image_url }}" style="width:64px;height:48px;object-fit:cover;border-radius:6px;background:#111" muted></video>
+  {% elif is_pdf %}
+  <div style="width:64px;height:48px;border-radius:6px;background:#e8f0fe;display:flex;align-items:center;justify-content:center"><i class="fas fa-file-pdf text-danger"></i></div>
   {% else %}
-  <img src="{{ a.image_url }}" style="width:64px;height:48px;object-fit:cover;border-radius:6px" alt="">
+  <img src="{{ a.image_url }}" style="width:64px;height:48px;object-fit:cover;border-radius:6px" alt="" onerror="this.style.display='none'">
   {% endif %}
 {% endif %}
 <div style="min-width:0"><strong class="d-block text-truncate">{{ a.title }}</strong> <span class="badge bg-secondary">{{ a.category }}</span></div>
@@ -35,4 +42,32 @@
 </div>
 {% else %}<p class="text-muted">No activities yet.</p>{% endfor %}
 </div></div>
+<script>
+(function(){
+  var input = document.getElementById('mediaInput');
+  var count = document.getElementById('fileCount');
+  var btn = document.getElementById('uploadBtn');
+  if (!input) return;
+  input.addEventListener('change', function(){
+    var n = this.files ? this.files.length : 0;
+    if (n === 0) {
+      count.textContent = 'No files selected. Ctrl/Cmd+click for multiple.';
+      count.className = 'small text-muted mb-2';
+    } else {
+      var names = [];
+      var total = 0;
+      for (var i = 0; i < n; i++) {
+        names.push(this.files[i].name);
+        total += this.files[i].size || 0;
+      }
+      var mb = (total / (1024*1024)).toFixed(1);
+      count.innerHTML = '<strong class="text-success">' + n + ' file(s) selected</strong> (' + mb + ' MB)<br><span class="text-muted">' + names.slice(0,8).join(', ') + (n>8 ? '…' : '') + '</span>';
+      count.className = 'small mb-2';
+    }
+  });
+  document.getElementById('activityForm').addEventListener('submit', function(){
+    if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+  });
+})();
+</script>
 {% include "admin/_layout_end.html" %}

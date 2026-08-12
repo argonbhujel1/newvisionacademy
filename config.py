@@ -66,4 +66,4 @@ class Config:
     ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
     # Upload limits
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB (photos + videos bulk)

@@ -9,6 +9,7 @@
 <div>
 {% if n.is_important %}<span class="badge bg-danger me-1">Important</span>{% endif %}
 <span class="badge bg-secondary">{{ n.category }}</span>
+{% if n.pdf_url %}<span class="badge bg-info text-dark"><i class="fas fa-paperclip"></i> Attachment</span>{% endif %}
 <h5 class="mt-2 mb-1"><a href="{{ url_for('notice_detail', notice_id=n.id) }}" class="text-decoration-none">{{ n.title }}</a></h5>
 <p class="text-muted small mb-0">{{ format_date(n.published_at) }}</p>
 </div>
