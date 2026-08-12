@@ -58,7 +58,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
   (function(){
-    var url = {{ view_url|tojson }};
+    var url = {{ raw_url|tojson }};
     var status = document.getElementById('pdfStatus');
     var canvas = document.getElementById('pdfCanvas');
     if (!window.pdfjsLib) { status.textContent = 'PDF viewer failed. Use Download.'; return; }
@@ -74,10 +74,16 @@
         status.style.display = 'none';
       });
     }
-    fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.arrayBuffer(); })
-      .then(function(buf){ return pdfjsLib.getDocument({ data: buf }).promise; })
-      .then(function(pdf){ pdfDoc = pdf; document.getElementById('pdfPages').textContent = pdf.numPages; render(1); })
-      .catch(function(e){ console.error(e); status.textContent = 'PDF preview unavailable. Please use Download.'; });
+    function loadPdf(u) {
+      return fetch(u, { mode: 'cors' }).then(function(r){
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.arrayBuffer();
+      }).then(function(buf){ return pdfjsLib.getDocument({ data: buf }).promise; });
+    }
+    var proxyUrl = {{ view_url|tojson }};
+    loadPdf(url).catch(function(){ return loadPdf(proxyUrl); }).then(function(pdf){
+      pdfDoc = pdf; document.getElementById('pdfPages').textContent = pdf.numPages; render(1);
+    }).catch(function(e){ console.error(e); status.textContent = 'PDF preview unavailable. Please use Download.'; });
     document.getElementById('pdfPrev').onclick = function(){ if (pdfDoc && pageNum > 1) { pageNum--; render(pageNum); } };
     document.getElementById('pdfNext').onclick = function(){ if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; render(pageNum); } };
   })();
@@ -87,6 +93,10 @@
     <iframe src="https://view.officeapps.live.com/op/embed.aspx?src={{ raw_url|urlencode }}"
       title="Office" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
   </div>
+  <p class="small text-muted mt-2 mb-0">
+    <a href="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true" target="_blank" rel="noopener">Google viewer</a>
+    · नदेखिए Download गर्नुहोस्
+  </p>
   {% elif is_text %}
   <div class="border rounded bg-light p-3" style="max-height:70vh;overflow:auto">
     <pre id="textPreview" class="mb-0 small" style="white-space:pre-wrap;word-break:break-word">Loading…</pre>

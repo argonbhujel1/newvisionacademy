@@ -757,19 +757,18 @@ def news_detail(slug):
 
 
 
+
 @app.route("/media/file")
 def media_file():
-    """Proxy Cloudinary (or allowed) files with correct Content-Type so PDF/docs open properly."""
-    import urllib.request
+    """Redirect to Cloudinary (or stream small files). Avoids Vercel 502 on large PDFs."""
     import urllib.parse
-    from flask import Response, stream_with_context
+    from flask import redirect as flask_redirect
 
     raw_url = (request.args.get("url") or "").strip()
     as_download = request.args.get("download") in ("1", "true", "yes")
     if not raw_url:
         abort(400)
 
-    # Security: only allow Cloudinary + our own domain
     parsed = urllib.parse.urlparse(raw_url)
     host = (parsed.hostname or "").lower()
     allowed = (
@@ -780,116 +779,28 @@ def media_file():
     if not allowed:
         abort(403)
 
-    # Fix common broken PDF delivery path
     url = raw_url
     low = url.lower()
-    if (low.endswith(".pdf") or ".pdf?" in low) and "/image/upload/" in url:
+    if (low.endswith(".pdf") or ".pdf" in low or "/raw/upload/" in url) and "/image/upload/" in url:
         url = url.replace("/image/upload/", "/raw/upload/", 1)
 
-    # Guess content-type from path
-    path = urllib.parse.urlparse(url).path.lower()
-    ctype = "application/octet-stream"
-    filename = path.rsplit("/", 1)[-1] or "file"
-    if path.endswith(".pdf") or ".pdf" in path:
-        ctype = "application/pdf"
-        if not filename.lower().endswith(".pdf"):
-            filename += ".pdf"
-    elif path.endswith((".jpg", ".jpeg")):
-        ctype = "image/jpeg"
-    elif path.endswith(".png"):
-        ctype = "image/png"
-    elif path.endswith(".gif"):
-        ctype = "image/gif"
-    elif path.endswith(".webp"):
-        ctype = "image/webp"
-    elif path.endswith(".mp4"):
-        ctype = "video/mp4"
-    elif path.endswith(".webm"):
-        ctype = "video/webm"
-    elif path.endswith(".mp3"):
-        ctype = "audio/mpeg"
-    elif path.endswith(".doc"):
-        ctype = "application/msword"
-    elif path.endswith(".docx"):
-        ctype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    elif path.endswith(".xls"):
-        ctype = "application/vnd.ms-excel"
-    elif path.endswith(".xlsx"):
-        ctype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    elif path.endswith(".ppt"):
-        ctype = "application/vnd.ms-powerpoint"
-    elif path.endswith(".pptx"):
-        ctype = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    elif path.endswith(".zip"):
-        ctype = "application/zip"
+    # Force download via Cloudinary transformation flag (no server memory needed)
+    if as_download and "cloudinary.com" in url and "/upload/" in url:
+        if "fl_attachment" not in url:
+            url = url.replace("/upload/", "/upload/fl_attachment/", 1)
+        # Prefer original filename if provided
+        name = (request.args.get("name") or "").strip()
+        if name and "fl_attachment:" not in url:
+            # fl_attachment:filename
+            safe = urllib.parse.quote(name[:80], safe=".")
+            url = url.replace("/upload/fl_attachment/", f"/upload/fl_attachment:{safe}/", 1)
 
-    try:
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": "NewVisionAcademyMediaProxy/1.0",
-                "Accept": "*/*",
-            },
-        )
-        upstream = urllib.request.urlopen(req, timeout=60)
-        upstream_ctype = upstream.headers.get("Content-Type", "")
-        # Prefer our guessed type for PDFs (upstream may send text/plain wrongly)
-        if ctype == "application/pdf" or (upstream_ctype and "pdf" in upstream_ctype.lower()):
-            ctype = "application/pdf"
-        elif upstream_ctype and "text/html" not in upstream_ctype.lower() and "text/plain" not in upstream_ctype.lower():
-            # use upstream if it looks legitimate
-            if not path.endswith(".pdf"):
-                ctype = upstream_ctype.split(";")[0].strip() or ctype
-
-        data = upstream.read()
-        upstream.close()
-
-        # Detect real type from magic bytes (Cloudinary raw URLs often have no extension)
-        if data[:4] == b"%PDF":
-            ctype = "application/pdf"
-            if not filename.lower().endswith(".pdf"):
-                filename = (filename or "document") + ".pdf"
-        elif data[:3] == b"\xff\xd8\xff" or data[:3] == bytes([0xFF, 0xD8, 0xFF]):
-            ctype = "image/jpeg"
-            if not filename.lower().endswith((".jpg", ".jpeg")):
-                filename = (filename or "image") + ".jpg"
-        elif data[:8] == b"\x89PNG\r\n\x1a\n" or data[:4] == b"\x89PNG":
-            ctype = "image/png"
-            if not filename.lower().endswith(".png"):
-                filename = (filename or "image") + ".png"
-        elif data[:4] == b"PK\x03\x04" or data[:2] == b"PK":
-            # zip / docx / xlsx / pptx
-            if "word" in ctype or filename.endswith((".doc", ".docx")):
-                pass
-            elif ctype == "application/octet-stream":
-                ctype = "application/zip"
-                if "." not in filename:
-                    filename = (filename or "archive") + ".zip"
-
-        safe_name = filename.replace('"', "")
-        # Prefer original name from query if provided
-        orig = (request.args.get("name") or "").strip()
-        if orig:
-            safe_name = orig.replace('"', "")[:120]
-
-        headers = {
-            "Content-Type": ctype,
-            "Content-Length": str(len(data)),
-            "Cache-Control": "public, max-age=86400",
-            "X-Content-Type-Options": "nosniff",
-        }
-        # ONLY force download when explicitly requested.
-        if as_download:
-            headers["Content-Disposition"] = f'attachment; filename="{safe_name}"'
-        return Response(data, headers=headers)
-    except Exception as e:
-        app.logger.error("media_file proxy error: %s url=%s", e, url)
-        abort(502)
+    return flask_redirect(url, code=302)
 
 
 @app.template_filter("proxy_url")
 def media_proxy_url(url, download=False, name=""):
-    """Build same-origin proxy URL so PDF opens with correct Content-Type."""
+    """Same-origin helper; redirects to Cloudinary. Use download=True for attachment."""
     if not url:
         return url
     from urllib.parse import quote
@@ -901,7 +812,6 @@ def media_proxy_url(url, download=False, name=""):
     if name:
         base += "&name=" + quote(str(name)[:120], safe="")
     return base
-
 
 
 @app.route("/notices")
