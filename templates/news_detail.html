@@ -31,9 +31,9 @@
 <div class="mt-4 p-3 border rounded shadow-sm bg-white">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h5 class="mb-0"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
-    <a href="{{ dl_url }}" class="btn btn-success btn-sm">
+    <button type="button" class="btn btn-success btn-sm" id="btnDl" data-dl="{{ dl_url }}">
       <i class="fas fa-download me-1"></i> Download
-    </a>
+    </button>
   </div>
 
   {% if is_img %}
@@ -45,19 +45,47 @@
   {% elif is_audio %}
   <audio src="{{ view_url }}" controls class="w-100"></audio>
   {% elif is_pdf %}
-  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
-    <iframe src="{{ view_url }}" title="PDF" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfPrev">‹ Prev</button>
+    <span class="small">Page <span id="pdfPage">1</span> / <span id="pdfPages">–</span></span>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfNext">Next ›</button>
   </div>
+  <div class="border rounded bg-light text-center overflow-auto" style="max-height:85vh;min-height:360px">
+    <canvas id="pdfCanvas" style="max-width:100%;margin:0 auto"></canvas>
+    <p id="pdfStatus" class="text-muted p-3 mb-0">Loading PDF…</p>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+  (function(){
+    var url = {{ view_url|tojson }};
+    var status = document.getElementById('pdfStatus');
+    var canvas = document.getElementById('pdfCanvas');
+    if (!window.pdfjsLib) { status.textContent = 'PDF viewer failed. Use Download.'; return; }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var pdfDoc = null, pageNum = 1, scale = 1.3;
+    function render(n) {
+      pdfDoc.getPage(n).then(function(page) {
+        var vp = page.getViewport({ scale: scale });
+        var ctx = canvas.getContext('2d');
+        canvas.height = vp.height; canvas.width = vp.width;
+        page.render({ canvasContext: ctx, viewport: vp });
+        document.getElementById('pdfPage').textContent = n;
+        status.style.display = 'none';
+      });
+    }
+    fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.arrayBuffer(); })
+      .then(function(buf){ return pdfjsLib.getDocument({ data: buf }).promise; })
+      .then(function(pdf){ pdfDoc = pdf; document.getElementById('pdfPages').textContent = pdf.numPages; render(1); })
+      .catch(function(e){ console.error(e); status.textContent = 'PDF preview unavailable. Please use Download.'; });
+    document.getElementById('pdfPrev').onclick = function(){ if (pdfDoc && pageNum > 1) { pageNum--; render(pageNum); } };
+    document.getElementById('pdfNext').onclick = function(){ if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; render(pageNum); } };
+  })();
+  </script>
   {% elif is_office %}
   <div class="border rounded overflow-hidden bg-light" style="height:85vh">
-    <iframe
-      src="https://view.officeapps.live.com/op/embed.aspx?src={{ raw_url|urlencode }}"
-      title="Office document"
-      class="w-100 h-100"
-      style="border:0"
-      allowfullscreen></iframe>
+    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src={{ raw_url|urlencode }}"
+      title="Office" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
   </div>
-  <p class="small text-muted mt-2 mb-0">Word / Excel / PowerPoint preview. नदेखिए Download गर्नुहोस्।</p>
   {% elif is_text %}
   <div class="border rounded bg-light p-3" style="max-height:70vh;overflow:auto">
     <pre id="textPreview" class="mb-0 small" style="white-space:pre-wrap;word-break:break-word">Loading…</pre>
@@ -65,23 +93,34 @@
   <script>
   fetch({{ view_url|tojson }}).then(function(r){ return r.text(); }).then(function(t){
     document.getElementById('textPreview').textContent = t;
-  }).catch(function(){
-    document.getElementById('textPreview').textContent = 'Could not load text. Please Download.';
-  });
+  }).catch(function(){ document.getElementById('textPreview').textContent = 'Could not load. Use Download.'; });
   </script>
   {% elif is_archive %}
   <div class="text-center p-5 border rounded bg-light">
     <i class="fas fa-file-archive fa-4x text-secondary mb-3"></i>
-    <p class="mb-2 fw-semibold">Archive file (ZIP / RAR)</p>
-    <p class="text-muted small mb-3">Archive preview browser मा खोल्दैन। Download गरेर extract गर्नुहोस्।</p>
-    <a href="{{ dl_url }}" class="btn btn-success"><i class="fas fa-download me-1"></i> Download archive</a>
+    <p class="mb-2 fw-semibold">Archive (ZIP / RAR)</p>
+    <p class="text-muted small">Download गरेर खोल्नुहोस्।</p>
   </div>
   {% else %}
-  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
-    <iframe src="{{ view_url }}" title="File" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+  <div class="text-center p-4 border rounded bg-light">
+    <i class="fas fa-file fa-3x text-secondary mb-2"></i>
+    <p class="text-muted">Use Download to open this file.</p>
   </div>
   {% endif %}
 </div>
+<script>
+(function(){
+  var btn = document.getElementById('btnDl');
+  if (!btn) return;
+  btn.addEventListener('click', function(){
+    var href = btn.getAttribute('data-dl');
+    if (!href) return;
+    var a = document.createElement('a');
+    a.href = href; a.rel = 'noopener'; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+})();
+</script>
 {% endif %}
 
 <a href="{{ url_for('news') }}" class="btn btn-outline-primary mt-4">← Back to News</a>

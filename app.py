@@ -849,16 +849,17 @@ def media_file():
             # still serve but log
             app.logger.warning("PDF proxy: missing %%PDF magic for %s", url)
 
-        disp = "attachment" if as_download else "inline"
-        # RFC 5987 filename
         safe_name = filename.replace('"', "")
         headers = {
             "Content-Type": ctype,
-            "Content-Disposition": f'{disp}; filename="{safe_name}"',
             "Content-Length": str(len(data)),
             "Cache-Control": "public, max-age=86400",
             "X-Content-Type-Options": "nosniff",
         }
+        # ONLY force download when explicitly requested.
+        # Do NOT set Content-Disposition on view — Chrome auto-downloads PDFs if present.
+        if as_download:
+            headers["Content-Disposition"] = f'attachment; filename="{safe_name}"'
         return Response(data, headers=headers)
     except Exception as e:
         app.logger.error("media_file proxy error: %s url=%s", e, url)
