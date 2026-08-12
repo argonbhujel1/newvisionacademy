@@ -245,6 +245,8 @@ class News(db.Model):
     excerpt = db.Column(db.Text, default="")
     cover_image = db.Column(db.String(500), default="")
     cover_public_id = db.Column(db.String(300), default="")
+    attachment_url = db.Column(db.String(500), default="")
+    attachment_public_id = db.Column(db.String(300), default="")
     category = db.Column(db.String(100), default="General")
     author = db.Column(db.String(100), default="Admin")
     status = db.Column(db.String(20), default="draft")  # draft, published
@@ -426,8 +428,10 @@ def slugify(text):
     return text[:80]
 
 
-def notify_subscribers(update_type, title, summary="", link_path="/"):
-    """Email all active newsletter subscribers about a new update."""
+def notify_subscribers(update_type, title, summary="", link_path="/", file_url=""):
+    """Email all active newsletter subscribers about a new update.
+    Optional file_url includes view/download links for attached files.
+    """
     try:
         subs = NewsletterSubscriber.query.filter_by(is_active=True).all()
         if not subs:
@@ -439,12 +443,25 @@ def notify_subscribers(update_type, title, summary="", link_path="/"):
             base = request.url_root.rstrip("/") if request else ""
         full_link = f"{base}{link_path}" if link_path.startswith("/") else link_path
         subject = f"[{school}] New {update_type}: {title}"
+
+        file_block = ""
+        if file_url:
+            file_block = f"""
+          <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin:16px 0">
+            <p style="margin:0 0 8px;font-weight:600;color:#0a2540">📎 Attached file</p>
+            <p style="margin:0 0 10px;font-size:13px;word-break:break-all;color:#4a5568">{file_url}</p>
+            <a href="{file_url}" style="background:#1e4d8c;color:#fff;padding:8px 14px;text-decoration:none;border-radius:6px;display:inline-block;margin-right:8px;font-size:14px">View / Open file</a>
+            <a href="{file_url}" style="background:#fff;color:#1e4d8c;padding:8px 14px;text-decoration:none;border-radius:6px;display:inline-block;border:1px solid #1e4d8c;font-size:14px">Download</a>
+          </div>
+            """
+
         body = f"""
         <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
           <h2 style="color:#0a2540">{school}</h2>
           <p>A new <strong>{update_type}</strong> has been published:</p>
           <h3 style="color:#1e4d8c">{title}</h3>
           <p>{summary or ''}</p>
+          {file_block}
           <p><a href="{full_link}" style="background:#c41e3a;color:#fff;padding:10px 18px;text-decoration:none;border-radius:6px;display:inline-block">View on website</a></p>
           <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
           <p style="font-size:12px;color:#718096">You received this because you subscribed to updates from {school}.</p>
@@ -1559,13 +1576,23 @@ def admin_news():
                 n.published_at = now_nepal()
             if "cover" in request.files and request.files["cover"].filename:
                 result = upload_image(request.files["cover"], folder="newvisionacademy/news")
+                if not result:
+                    result = upload_file(request.files["cover"], folder="newvisionacademy/news")
                 if result:
                     n.cover_image = result["url"]
                     n.cover_public_id = result.get("public_id", "")
+            # Any file type attachment (PDF, video, doc, etc.)
+            att = request.files.get("attachment")
+            if att and att.filename:
+                result = upload_file(att, folder="newvisionacademy/news")
+                if result:
+                    n.attachment_url = result["url"]
+                    n.attachment_public_id = result.get("public_id", "")
             db.session.add(n)
             db.session.commit()
             if n.status == "published":
-                notify_subscribers("News", n.title, n.excerpt or "", url_for("news_detail", slug=n.slug) if hasattr(n, "slug") else url_for("news"))
+                link = url_for("news_detail", slug=n.slug) if getattr(n, "slug", None) else url_for("news")
+                notify_subscribers("News", n.title, n.excerpt or "", link, file_url=n.attachment_url or n.cover_image or "")
             flash("News created.", "success")
         elif action == "edit":
             n = News.query.get(request.form.get("id"))
@@ -1583,12 +1610,21 @@ def admin_news():
                     n.published_at = now_nepal()
                 if "cover" in request.files and request.files["cover"].filename:
                     result = upload_image(request.files["cover"], folder="newvisionacademy/news")
+                    if not result:
+                        result = upload_file(request.files["cover"], folder="newvisionacademy/news")
                     if result:
                         n.cover_image = result["url"]
                         n.cover_public_id = result.get("public_id", "")
+                att = request.files.get("attachment")
+                if att and att.filename:
+                    result = upload_file(att, folder="newvisionacademy/news")
+                    if result:
+                        n.attachment_url = result["url"]
+                        n.attachment_public_id = result.get("public_id", "")
                 db.session.commit()
                 if newly_published:
-                    notify_subscribers("News", n.title, n.excerpt or "", url_for("news_detail", slug=n.slug) if n.slug else url_for("news"))
+                    link = url_for("news_detail", slug=n.slug) if n.slug else url_for("news")
+                    notify_subscribers("News", n.title, n.excerpt or "", link, file_url=n.attachment_url or n.cover_image or "")
                 flash("News updated.", "success")
         elif action == "delete":
             n = News.query.get(request.form.get("id"))
@@ -1636,7 +1672,7 @@ def admin_notices():
             db.session.commit()
             if n.is_active:
                 link = url_for("notice_detail", notice_id=n.id) if n.id else url_for("notices")
-                notify_subscribers("Notice", n.title, (n.description or "")[:200], link)
+                notify_subscribers("Notice", n.title, (n.description or "")[:200], link, file_url=n.pdf_url or "")
             flash("Notice added.", "success")
         elif action == "edit":
             n = Notice.query.get(request.form.get("id"))
@@ -2613,13 +2649,15 @@ def seed_database():
 
 
 def ensure_schema():
-    """Add any missing columns for existing SQLite databases."""
+    """Add any missing columns for existing databases."""
     from sqlalchemy import text as sql_text, inspect
     try:
         inspector = inspect(db.engine)
-        if "school_profile" in inspector.get_table_names():
+        tables = inspector.get_table_names()
+        alters = []
+
+        if "school_profile" in tables:
             cols = {c["name"] for c in inspector.get_columns("school_profile")}
-            alters = []
             if "about_image_url" not in cols:
                 alters.append("ALTER TABLE school_profile ADD COLUMN about_image_url VARCHAR(500) DEFAULT ''")
             if "about_image_public_id" not in cols:
@@ -2634,11 +2672,20 @@ def ensure_schema():
                 alters.append("ALTER TABLE school_profile ADD COLUMN province VARCHAR(100) DEFAULT 'Koshi Province'")
             if "country" not in cols:
                 alters.append("ALTER TABLE school_profile ADD COLUMN country VARCHAR(50) DEFAULT 'Nepal'")
-            for stmt in alters:
-                db.session.execute(sql_text(stmt))
-            if alters:
-                db.session.commit()
-                app.logger.info("Schema migration applied: %s columns" % len(alters))
+
+        # News attachment support
+        if "news" in tables:
+            cols = {c["name"] for c in inspector.get_columns("news")}
+            if "attachment_url" not in cols:
+                alters.append("ALTER TABLE news ADD COLUMN attachment_url VARCHAR(500) DEFAULT ''")
+            if "attachment_public_id" not in cols:
+                alters.append("ALTER TABLE news ADD COLUMN attachment_public_id VARCHAR(300) DEFAULT ''")
+
+        for stmt in alters:
+            db.session.execute(sql_text(stmt))
+        if alters:
+            db.session.commit()
+            app.logger.info("Schema migration applied: %s columns" % len(alters))
     except Exception as e:
         app.logger.warning("Schema ensure skipped: %s" % e)
 

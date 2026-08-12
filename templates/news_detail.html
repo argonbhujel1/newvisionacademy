@@ -2,11 +2,51 @@
 {% block content %}
 <section class="page-banner"><div class="container"><h1>{{ news.title }}</h1>
 <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
-<li class="breadcrumb-item"><a href="{{ url_for('news') }}">News</a></li><li class="breadcrumb-item active">Article</li></ol></nav></div></section>
-<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-8">
-{% if news.cover_image %}<img src="{{ news.cover_image }}" class="rounded mb-4 w-100" alt="{{ news.title }}">{% endif %}
+<li class="breadcrumb-item"><a href="{{ url_for('news') }}">News</a></li><li class="breadcrumb-item active">Detail</li></ol></nav></div></section>
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-9">
+{% if news.cover_image %}
+  {% set cu = news.cover_image|lower %}
+  {% set cover_video = cu.endswith('.mp4') or cu.endswith('.webm') or cu.endswith('.mov') or '/video/upload/' in cu %}
+  {% if cover_video %}
+  <video src="{{ news.cover_image }}" class="rounded mb-4 w-100" controls playsinline preload="metadata" style="max-height:420px;background:#000"></video>
+  {% else %}
+  <img src="{{ news.cover_image }}" class="rounded mb-4 w-100" alt="{{ news.title }}">
+  {% endif %}
+{% endif %}
 <div class="news-meta mb-3"><i class="far fa-calendar me-1"></i>{{ format_date(news.published_at) }} · {{ news.category }} · By {{ news.author }}</div>
-<div class="content">{{ news.content|safe }}</div>
+<div class="content mb-4">{{ news.content|safe }}</div>
+
+{% if news.attachment_url %}
+{% set u = news.attachment_url|lower %}
+{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or '/image/upload/' in u %}
+{% set is_pdf = u.endswith('.pdf') or 'pdf' in u or '/raw/upload/' in u %}
+{% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or u.endswith('.m4v') or '/video/upload/' in u %}
+<div class="mt-4 p-3 border rounded bg-light">
+  <h5 class="mb-3"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
+  {% if is_img %}
+  <div class="text-center mb-3">
+    <img src="{{ news.attachment_url }}" alt="Attachment" class="img-fluid rounded shadow-sm" style="max-height:70vh;object-fit:contain">
+  </div>
+  {% elif is_video %}
+  <div class="mb-3">
+    <video src="{{ news.attachment_url }}" controls playsinline preload="metadata" class="w-100 rounded shadow-sm" style="max-height:70vh;background:#000"></video>
+  </div>
+  {% elif is_pdf %}
+  <div class="mb-3 border rounded overflow-hidden bg-white" style="height:75vh">
+    <iframe src="{{ news.attachment_url }}#toolbar=1&navpanes=0" title="PDF" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+  </div>
+  <p class="small text-muted">PDF यहाँ सीधै देखिन्छ। नदेखिए download गर्नुहोस्।</p>
+  {% else %}
+  <div class="alert alert-white border mb-3">
+    <i class="fas fa-file me-2"></i> File attached —
+    <a href="{{ news.attachment_url }}" target="_blank" rel="noopener">Open in new tab</a>
+  </div>
+  {% endif %}
+  <a href="{{ news.attachment_url }}" target="_blank" class="btn btn-outline-primary btn-sm me-2"><i class="fas fa-external-link-alt me-1"></i> View / Open</a>
+  <a href="{{ news.attachment_url }}" target="_blank" download class="btn btn-primary btn-sm"><i class="fas fa-download me-1"></i> Download</a>
+</div>
+{% endif %}
+
 <a href="{{ url_for('news') }}" class="btn btn-outline-primary mt-4">← Back to News</a>
 {% if related %}<hr class="my-5"><h4>Related News</h4><div class="row g-3">
 {% for r in related %}<div class="col-md-4"><a href="{{ url_for('news_detail', slug=r.slug) }}" class="text-decoration-none"><strong>{{ r.title }}</strong></a></div>{% endfor %}

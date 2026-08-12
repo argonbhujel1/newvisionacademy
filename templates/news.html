@@ -9,7 +9,9 @@
 <div class="card-modern news-card h-100">
 {% if n.cover_image %}<img src="{{ n.cover_image }}" class="card-img-top" alt="{{ n.title }}" loading="lazy">{% endif %}
 <div class="card-body">
-<div class="news-meta"><i class="far fa-calendar me-1"></i>{{ format_date(n.published_at) }} · {{ n.category }}</div>
+<div class="news-meta"><i class="far fa-calendar me-1"></i>{{ format_date(n.published_at) }} · {{ n.category }}
+{% if n.attachment_url %} · <span class="text-primary"><i class="fas fa-paperclip"></i> File</span>{% endif %}
+</div>
 <h5><a href="{{ url_for('news_detail', slug=n.slug) }}">{{ n.title }}</a></h5>
 <p class="text-muted small">{{ n.excerpt or (n.content[:100] ~ '...') if n.content else '' }}</p>
 </div></div></div>

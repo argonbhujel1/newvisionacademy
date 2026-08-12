@@ -10,14 +10,22 @@
 <input type="text" name="category" class="form-control mb-2" value="General">
 <input type="text" name="author" class="form-control mb-2" value="Admin">
 <select name="status" class="form-select mb-2"><option value="draft">Draft</option><option value="published">Published</option></select>
+<label class="form-label small mb-1">Cover image (optional)</label>
 <input type="file" name="cover" class="form-control mb-2" accept="image/*">
+<label class="form-label small mb-1">Attachment – any file (PDF, video, doc…)</label>
+<input type="file" name="attachment" class="form-control mb-2" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,audio/*,*/*">
+<small class="text-muted d-block mb-2">Published news: attachment link goes in newsletter email too.</small>
 <div class="form-check mb-2"><input type="checkbox" name="is_featured" class="form-check-input" id="nf"><label for="nf">Featured</label></div>
 <button type="submit" class="btn btn-primary btn-sm">Create News</button>
 </form></div></div>
 <div class="col-lg-7">
 {% for n in news_list %}
 <div class="stat-card mb-2 d-flex justify-content-between align-items-center">
-<div><strong>{{ n.title }}</strong><br><small class="text-muted">{{ n.status }} · {{ format_date(n.created_at) }}</small></div>
+<div>
+<strong>{{ n.title }}</strong><br>
+<small class="text-muted">{{ n.status }} · {{ format_date(n.created_at) }}</small>
+{% if n.attachment_url %}<br><a href="{{ n.attachment_url }}" target="_blank" class="small"><i class="fas fa-paperclip"></i> Attachment</a>{% endif %}
+</div>
 <form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ n.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
 </div>
 {% else %}<p class="text-muted">No news yet.</p>{% endfor %}
