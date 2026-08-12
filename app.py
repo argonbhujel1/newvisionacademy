@@ -23,6 +23,19 @@ load_dotenv()
 app = Flask(__name__)
 app.config.from_object(Config)
 
+
+@app.template_filter("download_url")
+def cloudinary_download_url(url):
+    """Force download disposition on Cloudinary URLs when possible."""
+    if not url or "cloudinary.com" not in str(url):
+        return url
+    u = str(url)
+    # Insert fl_attachment after /upload/
+    if "/upload/" in u and "fl_attachment" not in u:
+        return u.replace("/upload/", "/upload/fl_attachment/", 1)
+    return u
+
+
 db = SQLAlchemy(app)
 mail = Mail(app)
 

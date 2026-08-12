@@ -124,12 +124,15 @@ def upload_file(file, folder="newvisionacademy/docs"):
     name_l = str(filename).lower()
     video_exts = (".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v", ".3gp", ".mpeg", ".mpg")
     image_exts = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg", ".heic", ".heif")
+    raw_exts = (".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", ".csv", ".zip", ".rar")
     if name_l.endswith(video_exts):
         resource_type = "video"
     elif name_l.endswith(image_exts):
         resource_type = "image"
+    elif name_l.endswith(raw_exts):
+        resource_type = "raw"  # PDF/docs – public raw delivery for view/download
     else:
-        resource_type = "auto"  # pdf, docs, etc.
+        resource_type = "auto"
 
     payload = _get_file_payload(file)
     if payload is None:
@@ -160,7 +163,19 @@ def upload_file(file, folder="newvisionacademy/docs"):
             "resource_type": resource_type,
             "overwrite": True,
             "invalidate": True,
+            "access_mode": "public",
         }
+        # Keep original extension in public_id for correct Content-Type
+        if resource_type == "raw" and filename:
+            import re as _re
+            from werkzeug.utils import secure_filename as _sf
+            safe = _sf(str(filename))
+            base = _re.sub(r"[^a-zA-Z0-9._-]", "_", safe)[:80]
+            if base:
+                options["public_id"] = base.rsplit(".", 1)[0] if "." in base else base
+                # Cloudinary raw uses format from filename when use_filename is set
+                options["use_filename"] = True
+                options["unique_filename"] = True
 
         # Chunked upload for files > ~8MB (videos especially)
         use_large = size is not None and size > 8 * 1024 * 1024

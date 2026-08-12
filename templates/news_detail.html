@@ -17,37 +17,101 @@
 <div class="content mb-4">{{ news.content|safe }}</div>
 
 {% if news.attachment_url %}
-{% set u = news.attachment_url|lower %}
-{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or '/image/upload/' in u %}
-{% set is_pdf = u.endswith('.pdf') or 'pdf' in u or '/raw/upload/' in u %}
-{% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or u.endswith('.m4v') or '/video/upload/' in u %}
-<div class="mt-4 p-3 border rounded bg-light">
-  <h5 class="mb-3"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
-  <div class="mb-3 d-flex flex-wrap gap-2">
-    <a href="{{ news.attachment_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm"><i class="fas fa-external-link-alt me-1"></i> Open / View</a>
-    <a href="{{ news.attachment_url }}" target="_blank" download class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i> Download</a>
+{% set file_url = news.attachment_url %}
+{% set u = file_url|lower %}
+{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg') or '/image/upload/' in u %}
+{% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or u.endswith('.m4v') or u.endswith('.avi') or '/video/upload/' in u %}
+{% set is_audio = u.endswith('.mp3') or u.endswith('.wav') or u.endswith('.ogg') or u.endswith('.m4a') %}
+{% set is_pdf = u.endswith('.pdf') or ('pdf' in u and not is_img and not is_video) or '/raw/upload/' in u %}
+<div class="mt-4 p-3 border rounded shadow-sm bg-white">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h5 class="mb-0"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ file_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+        <i class="fas fa-external-link-alt me-1"></i> Open / View
+      </a>
+      <a href="{{ file_url|download_url }}" download class="btn btn-success btn-sm" target="_blank" rel="noopener">
+        <i class="fas fa-download me-1"></i> Download
+      </a>
+    </div>
   </div>
+
   {% if is_img %}
-  <div class="text-center mb-3">
-    <img src="{{ news.attachment_url }}" alt="Attachment" class="img-fluid rounded shadow-sm" style="max-height:70vh;object-fit:contain">
+  <div class="text-center">
+    <a href="{{ file_url }}" target="_blank" rel="noopener">
+      <img src="{{ file_url }}" alt="Attachment" class="img-fluid rounded" style="max-height:75vh;object-fit:contain">
+    </a>
   </div>
   {% elif is_video %}
-  <div class="mb-3">
-    <video src="{{ news.attachment_url }}" controls playsinline preload="metadata" class="w-100 rounded shadow-sm" style="max-height:70vh;background:#000"></video>
-  </div>
+  <video src="{{ file_url }}" controls playsinline preload="metadata" class="w-100 rounded" style="max-height:75vh;background:#000"></video>
+  {% elif is_audio %}
+  <audio src="{{ file_url }}" controls class="w-100"></audio>
   {% elif is_pdf %}
-  <div class="mb-3 border rounded overflow-hidden bg-white" style="height:80vh">
-    <iframe
-      src="https://docs.google.com/gview?url={{ news.attachment_url|urlencode }}&embedded=true"
-      title="PDF"
-      class="w-100 h-100"
-      style="border:0"
-      allowfullscreen></iframe>
+  <div id="pdf-toolbar" class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdf-prev">‹ Prev</button>
+    <span class="small">Page <span id="pdf-page">1</span> / <span id="pdf-pages">?</span></span>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdf-next">Next ›</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdf-zoom-out">−</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="pdf-zoom-in">+</button>
   </div>
-  <p class="small text-muted mb-0">PDF preview. नदेखिए Open / Download प्रयोग गर्नुहोस्।</p>
+  <div id="pdf-wrap" class="border rounded bg-light text-center overflow-auto" style="max-height:75vh;min-height:320px">
+    <canvas id="pdf-canvas" style="max-width:100%"></canvas>
+    <div id="pdf-fallback" class="p-4 d-none">
+      <p class="text-muted">PDF preview load हुन सकेन।</p>
+      <a href="{{ file_url }}" target="_blank" class="btn btn-primary btn-sm me-2">Open in new tab</a>
+      <a href="{{ file_url|download_url }}" download class="btn btn-success btn-sm" target="_blank">Download PDF</a>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+  (function(){
+    var url = {{ file_url|tojson }};
+    var canvas = document.getElementById('pdf-canvas');
+    var fallback = document.getElementById('pdf-fallback');
+    if (!window['pdfjsLib']) { fallback.classList.remove('d-none'); return; }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var pdfDoc = null, pageNum = 1, scale = 1.2;
+    function renderPage(num) {
+      pdfDoc.getPage(num).then(function(page) {
+        var viewport = page.getViewport({ scale: scale });
+        var ctx = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        page.render({ canvasContext: ctx, viewport: viewport });
+        document.getElementById('pdf-page').textContent = num;
+      }).catch(function(){ fallback.classList.remove('d-none'); });
+    }
+    pdfjsLib.getDocument({ url: url, withCredentials: false }).promise.then(function(pdf) {
+      pdfDoc = pdf;
+      document.getElementById('pdf-pages').textContent = pdf.numPages;
+      renderPage(1);
+    }).catch(function(err) {
+      console.warn('PDF.js error', err);
+      fallback.classList.remove('d-none');
+      var wrap = document.getElementById('pdf-wrap');
+      var ifr = document.createElement('iframe');
+      ifr.src = 'https://docs.google.com/gview?url=' + encodeURIComponent(url) + '&embedded=true';
+      ifr.style.cssText = 'width:100%;height:70vh;border:0';
+      ifr.title = 'PDF';
+      wrap.insertBefore(ifr, fallback);
+    });
+    document.getElementById('pdf-prev').onclick = function(){ if (pdfDoc && pageNum > 1) { pageNum--; renderPage(pageNum); } };
+    document.getElementById('pdf-next').onclick = function(){ if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; renderPage(pageNum); } };
+    document.getElementById('pdf-zoom-in').onclick = function(){ scale = Math.min(scale + 0.2, 3); if (pdfDoc) renderPage(pageNum); };
+    document.getElementById('pdf-zoom-out').onclick = function(){ scale = Math.max(scale - 0.2, 0.6); if (pdfDoc) renderPage(pageNum); };
+  })();
+  </script>
   {% else %}
-  <div class="alert alert-white border mb-0">
-    <i class="fas fa-file me-2"></i> File attached — use Open / Download above.
+  <div class="alert alert-light border mb-0 d-flex align-items-center gap-3">
+    <i class="fas fa-file fa-2x text-secondary"></i>
+    <div>
+      <div class="fw-semibold">File attached</div>
+      <div class="small text-muted text-break">{{ file_url }}</div>
+      <div class="mt-2">
+        <a href="{{ file_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm me-1">Open / View</a>
+        <a href="{{ file_url|download_url }}" download class="btn btn-success btn-sm" target="_blank">Download</a>
+      </div>
+    </div>
   </div>
   {% endif %}
 </div>
