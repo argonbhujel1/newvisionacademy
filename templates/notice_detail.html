@@ -87,14 +87,23 @@
   })();
   </script>
 
-  {% elif is_office or is_text %}
+    {% elif is_office or is_text %}
   <div class="border rounded overflow-hidden bg-light" style="height:85vh">
+    {% if u.endswith('.xls') or u.endswith('.xlsx') or u.endswith('.ppt') or u.endswith('.pptx') or u.endswith('.doc') or u.endswith('.docx') %}
+    <iframe
+      src="https://view.officeapps.live.com/op/embed.aspx?src={{ raw_url|urlencode }}"
+      title="Office document"
+      class="w-100 h-100"
+      style="border:0"
+      allowfullscreen></iframe>
+    {% else %}
     <iframe
       src="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true"
       title="Document"
       class="w-100 h-100"
       style="border:0"
       allowfullscreen></iframe>
+    {% endif %}
   </div>
 
   {% elif is_archive %}
