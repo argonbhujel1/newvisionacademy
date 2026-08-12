@@ -17,41 +17,68 @@
 <div class="content mb-4">{{ news.content|safe }}</div>
 
 {% if news.attachment_url %}
-{% set file_url = news.attachment_url|fix_media_url %}
+{% set raw_url = news.attachment_url|fix_media_url %}
 {% set view_url = news.attachment_url|proxy_url %}
 {% set dl_url = news.attachment_url|proxy_url(true) %}
-{% set u = file_url|lower %}
-{% set is_img = (u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg')) and not u.endswith('.pdf') %}
+{% set u = raw_url|lower %}
+{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg') %}
 {% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or u.endswith('.m4v') or u.endswith('.avi') or '/video/upload/' in u %}
 {% set is_audio = u.endswith('.mp3') or u.endswith('.wav') or u.endswith('.ogg') or u.endswith('.m4a') %}
-{% set is_pdf = u.endswith('.pdf') or '/raw/upload/' in u or 'pdf' in u %}
+{% set is_pdf = u.endswith('.pdf') %}
+{% set is_office = u.endswith('.doc') or u.endswith('.docx') or u.endswith('.xls') or u.endswith('.xlsx') or u.endswith('.ppt') or u.endswith('.pptx') %}
+{% set is_text = u.endswith('.txt') or u.endswith('.csv') or u.endswith('.rtf') %}
+{% set is_archive = u.endswith('.zip') or u.endswith('.rar') or u.endswith('.7z') %}
 <div class="mt-4 p-3 border rounded shadow-sm bg-white">
-  <h5 class="mb-3"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
-  <div class="d-grid gap-2 d-sm-flex mb-3">
-    <a href="{{ view_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
-      <i class="fas fa-external-link-alt me-2"></i> Open / View file
-    </a>
-    <a href="{{ dl_url }}" class="btn btn-success btn-lg">
-      <i class="fas fa-download me-2"></i> Download
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h5 class="mb-0"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
+    <a href="{{ dl_url }}" class="btn btn-success btn-sm">
+      <i class="fas fa-download me-1"></i> Download
     </a>
   </div>
 
   {% if is_img %}
   <div class="text-center">
-    <img src="{{ view_url }}" alt="Attachment" class="img-fluid rounded" style="max-height:75vh;object-fit:contain">
+    <img src="{{ view_url }}" alt="Attachment" class="img-fluid rounded" style="max-height:80vh;object-fit:contain">
   </div>
   {% elif is_video %}
-  <video src="{{ view_url }}" controls playsinline preload="metadata" class="w-100 rounded" style="max-height:75vh;background:#000"></video>
+  <video src="{{ view_url }}" controls playsinline preload="metadata" class="w-100 rounded" style="max-height:80vh;background:#000"></video>
   {% elif is_audio %}
   <audio src="{{ view_url }}" controls class="w-100"></audio>
   {% elif is_pdf %}
-  <div class="border rounded overflow-hidden bg-light" style="height:80vh">
+  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
     <iframe src="{{ view_url }}" title="PDF" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
   </div>
+  {% elif is_office %}
+  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
+    <iframe
+      src="https://view.officeapps.live.com/op/embed.aspx?src={{ raw_url|urlencode }}"
+      title="Office document"
+      class="w-100 h-100"
+      style="border:0"
+      allowfullscreen></iframe>
+  </div>
+  <p class="small text-muted mt-2 mb-0">Word / Excel / PowerPoint preview. नदेखिए Download गर्नुहोस्।</p>
+  {% elif is_text %}
+  <div class="border rounded bg-light p-3" style="max-height:70vh;overflow:auto">
+    <pre id="textPreview" class="mb-0 small" style="white-space:pre-wrap;word-break:break-word">Loading…</pre>
+  </div>
+  <script>
+  fetch({{ view_url|tojson }}).then(function(r){ return r.text(); }).then(function(t){
+    document.getElementById('textPreview').textContent = t;
+  }).catch(function(){
+    document.getElementById('textPreview').textContent = 'Could not load text. Please Download.';
+  });
+  </script>
+  {% elif is_archive %}
+  <div class="text-center p-5 border rounded bg-light">
+    <i class="fas fa-file-archive fa-4x text-secondary mb-3"></i>
+    <p class="mb-2 fw-semibold">Archive file (ZIP / RAR)</p>
+    <p class="text-muted small mb-3">Archive preview browser मा खोल्दैन। Download गरेर extract गर्नुहोस्।</p>
+    <a href="{{ dl_url }}" class="btn btn-success"><i class="fas fa-download me-1"></i> Download archive</a>
+  </div>
   {% else %}
-  <div class="alert alert-light border mb-0">
-    <i class="fas fa-file me-2"></i>
-    Use <strong>Open / View</strong> or <strong>Download</strong> above.
+  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
+    <iframe src="{{ view_url }}" title="File" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
   </div>
   {% endif %}
 </div>
