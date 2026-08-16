@@ -1,26 +1,85 @@
 {% include "admin/_layout_start.html" %}
-<h4 class="mb-4">Events</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0">Events</h4>
+</div>
 <div class="row g-4">
-<div class="col-lg-5"><div class="stat-card">
+<div class="col-lg-5">
+<div class="stat-card"><h6 class="mb-3">Add Event</h6>
 <form method="POST" enctype="multipart/form-data">
 <input type="hidden" name="action" value="add">
 <input type="text" name="name" class="form-control mb-2" placeholder="Event name" required>
-<textarea name="description" class="form-control mb-2" rows="2"></textarea>
+<textarea name="description" class="form-control mb-2" rows="3" placeholder="Description"></textarea>
 <input type="date" name="event_date" class="form-control mb-2">
-<input type="text" name="start_time" class="form-control mb-2" placeholder="Start e.g. 10:00 AM">
-<input type="text" name="end_time" class="form-control mb-2" placeholder="End">
+<div class="row g-2 mb-2">
+  <div class="col"><input type="text" name="start_time" class="form-control" placeholder="Start time"></div>
+  <div class="col"><input type="text" name="end_time" class="form-control" placeholder="End time"></div>
+</div>
 <input type="text" name="venue" class="form-control mb-2" placeholder="Venue">
 <input type="text" name="organizer" class="form-control mb-2" placeholder="Organizer">
-<select name="status" class="form-select mb-2"><option value="upcoming">Upcoming</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
+<input type="url" name="registration_url" class="form-control mb-2" placeholder="Registration URL (optional)">
+<select name="status" class="form-select mb-2">
+  <option value="upcoming">Upcoming</option>
+  <option value="ongoing">Ongoing</option>
+  <option value="completed">Completed</option>
+  <option value="cancelled">Cancelled</option>
+</select>
+<label class="form-label small mb-1">Cover image</label>
 <input type="file" name="image" class="form-control mb-2" accept="image/*">
-<div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="ea"><label for="ea">Active</label></div>
+<label class="form-label small mb-1">Attachment (any file type)</label>
+<input type="file" name="attachment" class="form-control mb-2"
+  accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.rar,audio/*,*/*">
+<div class="form-check mb-2">
+  <input type="checkbox" name="is_active" checked class="form-check-input" id="ea">
+  <label for="ea">Active</label>
+</div>
 <button type="submit" class="btn btn-primary btn-sm">Add Event</button>
 </form></div></div>
 <div class="col-lg-7">
 {% for e in events %}
-<div class="stat-card mb-2 d-flex justify-content-between">
-<div><strong>{{ e.name }}</strong> <span class="badge bg-secondary">{{ e.status }}</span><br><small class="text-muted">{% if e.event_date %}{{ e.event_date.strftime('%d %b %Y') }}{% endif %}</small></div>
-<form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ e.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+<div class="stat-card mb-3">
+  <div class="d-flex justify-content-between gap-2">
+    <div>
+      <strong>{{ e.name }}</strong>
+      <span class="badge bg-secondary">{{ e.status }}</span>
+      {% if e.attachment_url %}<span class="badge bg-info">Attachment</span>{% endif %}
+      <br>
+      <small class="text-muted">{% if e.event_date %}{{ e.event_date.strftime('%d %b %Y') }}{% endif %}</small>
+    </div>
+    <form method="POST" onsubmit="return confirm('Delete?')">
+      <input type="hidden" name="action" value="delete">
+      <input type="hidden" name="id" value="{{ e.id }}">
+      <button class="btn btn-sm btn-outline-danger">Delete</button>
+    </form>
+  </div>
+  <form method="POST" enctype="multipart/form-data" class="mt-2 border-top pt-2">
+    <input type="hidden" name="action" value="edit">
+    <input type="hidden" name="id" value="{{ e.id }}">
+    <input type="text" name="name" class="form-control form-control-sm mb-1" value="{{ e.name }}" required>
+    <textarea name="description" class="form-control form-control-sm mb-1" rows="2">{{ e.description }}</textarea>
+    <div class="row g-1 mb-1">
+      <div class="col"><input type="date" name="event_date" class="form-control form-control-sm" value="{% if e.event_date %}{{ e.event_date.strftime('%Y-%m-%d') }}{% endif %}"></div>
+      <div class="col"><input type="text" name="start_time" class="form-control form-control-sm" value="{{ e.start_time }}" placeholder="Start"></div>
+      <div class="col"><input type="text" name="end_time" class="form-control form-control-sm" value="{{ e.end_time }}" placeholder="End"></div>
+    </div>
+    <input type="text" name="venue" class="form-control form-control-sm mb-1" value="{{ e.venue }}" placeholder="Venue">
+    <input type="text" name="organizer" class="form-control form-control-sm mb-1" value="{{ e.organizer }}" placeholder="Organizer">
+    <input type="url" name="registration_url" class="form-control form-control-sm mb-1" value="{{ e.registration_url }}" placeholder="Registration URL">
+    <select name="status" class="form-select form-select-sm mb-1">
+      {% for s in ['upcoming','ongoing','completed','cancelled'] %}
+      <option value="{{ s }}" {% if e.status==s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <label class="form-label small mb-0">Cover image</label>
+    <input type="file" name="image" class="form-control form-control-sm mb-1" accept="image/*">
+    <label class="form-label small mb-0">Attachment (any type){% if e.attachment_url %} — <a href="{{ e.attachment_url }}" target="_blank">current</a>{% endif %}</label>
+    <input type="file" name="attachment" class="form-control form-control-sm mb-1"
+      accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.rar,audio/*,*/*">
+    <div class="form-check mb-1">
+      <input type="checkbox" name="is_active" class="form-check-input" id="e{{ e.id }}" {% if e.is_active %}checked{% endif %}>
+      <label for="e{{ e.id }}" class="small">Active</label>
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
+  </form>
 </div>
 {% else %}<p class="text-muted">No events.</p>{% endfor %}
 </div></div>

@@ -302,6 +302,8 @@ class Event(db.Model):
     venue = db.Column(db.String(200), default="")
     image_url = db.Column(db.String(500), default="")
     image_public_id = db.Column(db.String(300), default="")
+    attachment_url = db.Column(db.String(500), default="")
+    attachment_public_id = db.Column(db.String(300), default="")
     organizer = db.Column(db.String(100), default="")
     registration_url = db.Column(db.String(500), default="")
     status = db.Column(db.String(20), default="upcoming")  # upcoming, ongoing, completed, cancelled
@@ -914,6 +916,13 @@ def events():
     items = Event.query.filter_by(is_active=True).order_by(Event.event_date.desc()).all()
     seo = get_seo("events", {"title": "Events – New Vision Academy"})
     return render_template("events.html", events=items, seo=seo)
+
+
+@app.route("/events/<int:event_id>")
+def event_detail(event_id):
+    e = Event.query.filter_by(id=event_id, is_active=True).first_or_404()
+    seo = get_seo("events", {"title": f"{e.name} – Events – New Vision Academy"})
+    return render_template("event_detail.html", event=e, seo=seo)
 
 
 @app.route("/admission", methods=["GET", "POST"])
@@ -1960,13 +1969,19 @@ def admin_events():
                 if result:
                     e.image_url = result["url"]
                     e.image_public_id = result.get("public_id", "")
+            att = request.files.get("attachment")
+            if att and att.filename:
+                result = upload_file(att, folder="newvisionacademy/events")
+                if result:
+                    e.attachment_url = result["url"]
+                    e.attachment_public_id = result.get("public_id", "")
             db.session.add(e)
             db.session.commit()
             if e.is_active:
                 summary = e.description or ""
                 if e.event_date:
                     summary = f"Date: {e.event_date}. " + summary
-                notify_subscribers("Event", e.name, summary[:200], url_for("events"))
+                notify_subscribers("Event", e.name, summary[:200], url_for("event_detail", event_id=e.id), file_url=e.attachment_url or "")
             flash("Event added.", "success")
         elif action == "edit":
             e = Event.query.get(request.form.get("id"))
@@ -1987,6 +2002,12 @@ def admin_events():
                     if result:
                         e.image_url = result["url"]
                         e.image_public_id = result.get("public_id", "")
+                att = request.files.get("attachment")
+                if att and att.filename:
+                    result = upload_file(att, folder="newvisionacademy/events")
+                    if result:
+                        e.attachment_url = result["url"]
+                        e.attachment_public_id = result.get("public_id", "")
                 db.session.commit()
                 flash("Event updated.", "success")
         elif action == "delete":
@@ -2915,6 +2936,14 @@ def ensure_schema():
             if "attachment_public_id" not in cols:
                 alters.append("ALTER TABLE news ADD COLUMN attachment_public_id VARCHAR(300) DEFAULT ''")
 
+        # Event attachment support
+        if "event" in tables:
+            ecols = {c["name"] for c in inspector.get_columns("event")}
+            if "attachment_url" not in ecols:
+                alters.append("ALTER TABLE event ADD COLUMN attachment_url VARCHAR(500) DEFAULT ''")
+            if "attachment_public_id" not in ecols:
+                alters.append("ALTER TABLE event ADD COLUMN attachment_public_id VARCHAR(300) DEFAULT ''")
+
         for stmt in alters:
             db.session.execute(sql_text(stmt))
         if alters:
@@ -2932,6 +2961,7 @@ with app.app_context():
 
 
 # CSRF-like simple token helper (basic protection)
+
 @app.before_request
 def basic_security():
     if request.method == "POST" and request.path.startswith("/admin"):
