@@ -1,0 +1,123 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Teachers / Staff <span class="badge bg-secondary">{{ teachers|length }}</span></h4>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="stat-card">
+      <h6 class="mb-3">Add New Teacher / Staff</h6>
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="add">
+        <div class="mb-2"><label class="form-label small">Full Name *</label>
+        <input type="text" name="full_name" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label small">Position</label>
+        <input type="text" name="position" class="form-control" placeholder="Teacher, Principal, etc."></div>
+        <div class="mb-2"><label class="form-label small">Department</label>
+        <input type="text" name="department" class="form-control"></div>
+        <div class="mb-2"><label class="form-label small">Qualification</label>
+        <input type="text" name="qualification" class="form-control"></div>
+        <div class="mb-2"><label class="form-label small">Experience</label>
+        <input type="text" name="experience" class="form-control"></div>
+        <div class="mb-2"><label class="form-label small">Short Bio</label>
+        <textarea name="short_bio" class="form-control" rows="2"></textarea></div>
+        <div class="mb-2"><label class="form-label small">Email</label>
+        <input type="email" name="email" class="form-control"></div>
+        <div class="mb-2"><label class="form-label small">Phone</label>
+        <input type="text" name="phone" class="form-control"></div>
+        <div class="mb-2"><label class="form-label small">Display Order</label>
+        <input type="number" name="sort_order" class="form-control" value="0"></div>
+        <div class="mb-2"><label class="form-label small">Photo</label>
+        <input type="file" name="photo" class="form-control" accept="image/*"></div>
+        <div class="form-check"><input type="checkbox" name="is_featured" class="form-check-input" id="tf"><label for="tf">Featured on homepage</label></div>
+        <div class="form-check mb-3"><input type="checkbox" name="is_active" class="form-check-input" checked id="ta"><label for="ta">Active</label></div>
+        <button type="submit" class="btn btn-primary w-100">Add Teacher</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    {% for t in teachers %}
+    <div class="stat-card mb-3">
+      <div class="row g-3 align-items-start">
+        <div class="col-auto">
+          {% if t.photo_url %}
+          <img src="{{ t.photo_url }}" width="80" height="80" class="rounded-circle" style="object-fit:cover" alt="{{ t.full_name }}">
+          {% else %}
+          <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:80px;height:80px"><i class="fas fa-user text-muted fa-lg"></i></div>
+          {% endif %}
+        </div>
+        <div class="col">
+          <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="id" value="{{ t.id }}">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Full Name</label>
+                <input type="text" name="full_name" class="form-control form-control-sm" value="{{ t.full_name }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Position</label>
+                <input type="text" name="position" class="form-control form-control-sm" value="{{ t.position or '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Department</label>
+                <input type="text" name="department" class="form-control form-control-sm" value="{{ t.department or '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Qualification</label>
+                <input type="text" name="qualification" class="form-control form-control-sm" value="{{ t.qualification or '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Experience</label>
+                <input type="text" name="experience" class="form-control form-control-sm" value="{{ t.experience or '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Display Order</label>
+                <input type="number" name="sort_order" class="form-control form-control-sm" value="{{ t.sort_order or 0 }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Email</label>
+                <input type="email" name="email" class="form-control form-control-sm" value="{{ t.email or '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Phone</label>
+                <input type="text" name="phone" class="form-control form-control-sm" value="{{ t.phone or '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-0">Short Bio</label>
+                <textarea name="short_bio" class="form-control form-control-sm" rows="2">{{ t.short_bio or '' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Change Photo</label>
+                <input type="file" name="photo" class="form-control form-control-sm" accept="image/*">
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                  <input type="checkbox" name="is_featured" class="form-check-input" id="f{{ t.id }}" {% if t.is_featured %}checked{% endif %}>
+                  <label for="f{{ t.id }}" class="form-check-label small">Featured</label>
+                </div>
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                  <input type="checkbox" name="is_active" class="form-check-input" id="a{{ t.id }}" {% if t.is_active %}checked{% endif %}>
+                  <label for="a{{ t.id }}" class="form-check-label small">Active</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-sm btn-primary">Save Changes</button>
+              </div>
+            </div>
+          </form>
+          <form method="POST" class="mt-2" onsubmit="return confirm('Delete {{ t.full_name }}?');">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="{{ t.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No teachers yet. Add one using the form on the left.</p>
+    {% endfor %}
+  </div>
+</div>
+{% include "admin/_layout_end.html" %}

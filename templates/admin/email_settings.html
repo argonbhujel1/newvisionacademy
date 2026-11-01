@@ -1,0 +1,47 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Email & Communication Settings</h4>
+<div class="alert alert-info mb-4">
+  <strong>Email auto-reply setup</strong><br>
+  Auto-replies only work when SMTP is configured in your <code>.env</code> file:
+  <pre class="mb-0 mt-2 small">MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=true
+MAIL_USERNAME=your@gmail.com
+MAIL_PASSWORD=your-app-password</pre>
+  For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank">App Password</a>, not your normal password.
+  Restart the app after changing <code>.env</code>.
+</div>
+
+<div class="stat-card mb-4">
+<form method="POST">
+<input type="hidden" name="action" value="response_time">
+<div class="row g-3">
+<div class="col-md-4">
+<label class="form-label">Expected Response Time</label>
+<select name="response_time" class="form-select">
+{% for t in ['Immediately','5 minutes','10 minutes','15 minutes','30 minutes','1 hour','2 hours','Custom'] %}
+<option value="{{ t }}" {% if profile.response_time==t %}selected{% endif %}>{{ t }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-4"><label class="form-label">Custom Response Text</label><input type="text" name="custom_response_time" class="form-control" value="{{ profile.custom_response_time }}"></div>
+<div class="col-md-4"><div class="form-check mt-4"><input type="checkbox" name="auto_reply_enabled" class="form-check-input" id="are" {% if profile.auto_reply_enabled %}checked{% endif %}><label for="are">Enable Auto-Reply</label></div></div>
+<div class="col-12"><button type="submit" class="btn btn-primary btn-sm">Save Communication Settings</button></div>
+</div></form>
+</div>
+<h5 class="mb-3">Email Templates</h5>
+{% for t in templates %}
+<div class="stat-card mb-3">
+<form method="POST">
+<input type="hidden" name="action" value="template">
+<input type="hidden" name="id" value="{{ t.id }}">
+<strong>{{ t.name }}</strong> <code class="small">{{ t.slug }}</code>
+<input type="text" name="subject" class="form-control mb-2 mt-2" value="{{ t.subject }}">
+<textarea name="body" class="form-control mb-2" rows="4">{{ t.body }}</textarea>
+<div class="form-check mb-2"><input type="checkbox" name="is_active" class="form-check-input" id="t{{ t.id }}" {% if t.is_active %}checked{% endif %}><label for="t{{ t.id }}">Active</label></div>
+<button type="submit" class="btn btn-sm btn-primary">Update Template</button>
+</form>
+<p class="small text-muted mt-2">Variables: {{student_name}}, {{parent_name}}, {{customer_name}}, {{application_id}}, {{school_name}}, {{school_address}}, {{response_time}}, {{date}}, {{time}}, {{status}}</p>
+</div>
+{% endfor %}
+{% include "admin/_layout_end.html" %}

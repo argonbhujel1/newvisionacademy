@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Academics</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">Academics</li></ol></nav></div></section>
+<section class="section"><div class="container">
+<p class="lead text-center mb-5">{{ profile.school_name }} offers education from ECD/Nursery through Grade 10.</p>
+<div class="row g-4">
+{% for g in grades %}
+<div class="col-md-6 col-lg-4">
+<div class="card-modern p-4 h-100">
+{% if g.image_url %}<img src="{{ g.image_url }}" class="rounded mb-3 w-100" style="height:140px;object-fit:cover" alt="{{ g.name }}">{% endif %}
+<h5>{{ g.name }}</h5>
+{% if g.class_teacher %}<p class="small text-muted">Class Teacher: {{ g.class_teacher }}</p>{% endif %}
+<p class="small">{{ g.description or 'Information coming soon.' }}</p>
+</div></div>
+{% else %}
+<p class="text-center text-muted">Grade information will be updated by the school administration.</p>
+{% endfor %}
+</div></div></section>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Grades / Classes</h4>
+<div class="row g-4">
+<div class="col-lg-4"><div class="stat-card">
+<form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="action" value="add">
+<input type="text" name="name" class="form-control mb-2" placeholder="Grade name" required>
+<textarea name="description" class="form-control mb-2" placeholder="Description" rows="2"></textarea>
+<input type="text" name="class_teacher" class="form-control mb-2" placeholder="Class teacher">
+<input type="number" name="sort_order" class="form-control mb-2" value="0">
+<input type="file" name="image" class="form-control mb-2" accept="image/*">
+<div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="ga"><label for="ga">Active</label></div>
+<button type="submit" class="btn btn-primary btn-sm">Add Grade</button>
+</form></div></div>
+<div class="col-lg-8">
+{% for g in grades %}
+<div class="stat-card mb-2 d-flex justify-content-between"><div><strong>{{ g.name }}</strong> <small class="text-muted">{{ g.class_teacher }}</small></div>
+<form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ g.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+</div>
+{% endfor %}
+</div></div>
+{% include "admin/_layout_end.html" %}

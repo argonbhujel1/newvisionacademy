@@ -1,0 +1,22 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">SEO Settings</h4>
+<form method="POST" class="stat-card">
+<div class="mb-3"><label class="form-label">Page Key</label>
+<select name="page_key" class="form-select">
+<option value="home">Home</option><option value="about">About</option><option value="academics">Academics</option>
+<option value="admission">Admission</option><option value="contact">Contact</option><option value="news">News</option>
+<option value="gallery">Gallery</option><option value="events">Events</option><option value="notices">Notices</option>
+</select></div>
+<input type="text" name="title" class="form-control mb-2" placeholder="Page Title">
+<textarea name="meta_description" class="form-control mb-2" placeholder="Meta Description" rows="2"></textarea>
+<input type="text" name="og_title" class="form-control mb-2" placeholder="OG Title">
+<textarea name="og_description" class="form-control mb-2" placeholder="OG Description" rows="2"></textarea>
+<input type="text" name="og_image" class="form-control mb-2" placeholder="OG Image URL">
+<input type="text" name="canonical_url" class="form-control mb-2" placeholder="Canonical URL">
+<button type="submit" class="btn btn-primary">Save SEO</button>
+</form>
+{% if seo_items %}
+<hr><h6>Existing</h6>
+{% for s in seo_items %}<div class="small mb-1"><strong>{{ s.page_key }}</strong>: {{ s.title }}</div>{% endfor %}
+{% endif %}
+{% include "admin/_layout_end.html" %}

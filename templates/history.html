@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Our History</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">History</li></ol></nav></div></section>
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-8">
+<p>{{ profile.history or 'Information coming soon.' }}</p>
+</div></div></div></section>
+{% endblock %}

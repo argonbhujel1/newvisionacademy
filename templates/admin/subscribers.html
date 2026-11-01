@@ -1,0 +1,67 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-2">Student Emails <small class="text-muted">(Newsletter list)</small></h4>
+<p class="text-muted small mb-4">यहाँ save गरेका सबै email मा Notice / News publish हुँदा auto mail जान्छ।</p>
+
+<div class="row g-4">
+<div class="col-lg-5">
+  <div class="stat-card mb-3">
+    <h6 class="mb-3"><i class="fas fa-plus-circle me-1"></i> Bulk add emails</h6>
+    <form method="POST">
+      <input type="hidden" name="action" value="bulk_add">
+      <textarea name="emails" class="form-control mb-2" rows="10" placeholder="एक line मा एक email, वा comma/semicolon ले छुट्याएर लेख्नुहोस्:&#10;&#10;student1@gmail.com&#10;student2@gmail.com&#10;parent@example.com" required></textarea>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i> Save all emails</button>
+    </form>
+    <p class="small text-muted mt-2 mb-0">Duplicate emails skip हुन्छन्। Active list मा थपिन्छ।</p>
+  </div>
+  <div class="stat-card">
+    <h6 class="mb-3">Single add</h6>
+    <form method="POST" class="row g-2">
+      <input type="hidden" name="action" value="add_one">
+      <div class="col"><input type="email" name="email" class="form-control form-control-sm" placeholder="email@example.com" required></div>
+      <div class="col-auto"><button type="submit" class="btn btn-sm btn-secondary">Add</button></div>
+    </form>
+  </div>
+</div>
+<div class="col-lg-7">
+  <div class="stat-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0">Saved emails <span class="badge bg-primary">{{ subscribers|length }}</span></h6>
+      <form method="POST" onsubmit="return confirm('Delete ALL emails?')" class="d-inline">
+        <input type="hidden" name="action" value="clear_all">
+        <button class="btn btn-sm btn-outline-danger">Clear all</button>
+      </form>
+    </div>
+    {% if subscribers %}
+    <div class="table-responsive" style="max-height:480px;overflow:auto">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light sticky-top"><tr><th>Email</th><th>Status</th><th>Added</th><th></th></tr></thead>
+        <tbody>
+        {% for s in subscribers %}
+        <tr>
+          <td>{{ s.email }}</td>
+          <td>{% if s.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Off</span>{% endif %}</td>
+          <td class="small text-muted">{{ format_date(s.created_at) }}</td>
+          <td class="text-end">
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="action" value="toggle">
+              <input type="hidden" name="id" value="{{ s.id }}">
+              <button class="btn btn-sm btn-outline-secondary" title="Toggle">{{ 'Off' if s.is_active else 'On' }}</button>
+            </form>
+            <form method="POST" class="d-inline" onsubmit="return confirm('Delete?')">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id" value="{{ s.id }}">
+              <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">अहिले कुनै email saved छैन। बायाँबाट bulk add गर्नुहोस्।</p>
+    {% endif %}
+  </div>
+</div>
+</div>
+{% include "admin/_layout_end.html" %}

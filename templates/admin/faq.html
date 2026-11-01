@@ -1,0 +1,21 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">FAQ</h4>
+<div class="row g-4">
+<div class="col-lg-5"><div class="stat-card">
+<form method="POST">
+<input type="hidden" name="action" value="add">
+<input type="text" name="question" class="form-control mb-2" placeholder="Question" required>
+<textarea name="answer" class="form-control mb-2" rows="3" placeholder="Answer"></textarea>
+<input type="number" name="sort_order" class="form-control mb-2" value="0">
+<div class="form-check mb-2"><input type="checkbox" name="is_active" checked class="form-check-input" id="fqa"><label for="fqa">Active</label></div>
+<button type="submit" class="btn btn-primary btn-sm">Add FAQ</button>
+</form></div></div>
+<div class="col-lg-7">
+{% for f in faqs %}
+<div class="stat-card mb-2 d-flex justify-content-between">
+<div><strong>{{ f.question }}</strong><p class="small text-muted mb-0">{{ f.answer[:100] }}</p></div>
+<form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ f.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+</div>
+{% endfor %}
+</div></div>
+{% include "admin/_layout_end.html" %}

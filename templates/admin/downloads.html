@@ -1,0 +1,20 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Downloads</h4>
+<div class="row g-4">
+<div class="col-lg-4"><div class="stat-card">
+<form method="POST">
+<input type="hidden" name="action" value="add">
+<input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
+<textarea name="description" class="form-control mb-2" rows="2"></textarea>
+<input type="text" name="file_url" class="form-control mb-2" placeholder="File URL">
+<input type="text" name="category" class="form-control mb-2" value="General">
+<button type="submit" class="btn btn-primary btn-sm">Add</button>
+</form></div></div>
+<div class="col-lg-8">
+{% for d in downloads %}
+<div class="stat-card mb-2 d-flex justify-content-between"><div><strong>{{ d.title }}</strong></div>
+<form method="POST" onsubmit="return confirm('Delete?')"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ d.id }}"><button class="btn btn-sm btn-outline-danger">Delete</button></form>
+</div>
+{% else %}<p class="text-muted">No downloads.</p>{% endfor %}
+</div></div>
+{% include "admin/_layout_end.html" %}

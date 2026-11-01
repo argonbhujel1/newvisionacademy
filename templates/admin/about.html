@@ -1,0 +1,37 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">About / Vision / Mission</h4>
+<form method="POST" enctype="multipart/form-data">
+  <div class="stat-card mb-4">
+    <h6 class="mb-3">About Page Image</h6>
+    {% if profile.about_image_url %}
+    <div class="mb-3">
+      <img src="{{ profile.about_image_url }}" alt="About" class="img-fluid rounded" style="max-height:220px;object-fit:cover">
+    </div>
+    <div class="form-check mb-3">
+      <input type="checkbox" name="remove_about_image" value="1" class="form-check-input" id="rmAbout">
+      <label class="form-check-label" for="rmAbout">Remove current image</label>
+    </div>
+    {% endif %}
+    <label class="form-label">Upload About Image</label>
+    <input type="file" name="about_image" class="form-control" accept="image/*">
+    <p class="small text-muted mt-1">This image appears on the About page and homepage About section.</p>
+  </div>
+
+  <div class="mb-3"><label class="form-label">Description</label>
+  <textarea name="description" class="form-control" rows="5">{{ profile.description }}</textarea></div>
+  <div class="mb-3"><label class="form-label">History</label>
+  <textarea name="history" class="form-control" rows="4">{{ profile.history }}</textarea></div>
+  <div class="mb-3"><label class="form-label">Vision</label>
+  <textarea name="vision" class="form-control" rows="3">{{ profile.vision }}</textarea></div>
+  <div class="mb-3"><label class="form-label">Mission</label>
+  <textarea name="mission" class="form-control" rows="4">{{ profile.mission }}</textarea></div>
+  <div class="mb-3"><label class="form-label">Core Values</label>
+  <textarea name="core_values" class="form-control" rows="6">{{ profile.core_values }}</textarea>
+  <p class="small text-muted">One value per line, e.g. Integrity — description</p></div>
+  <div class="mb-3"><label class="form-label">Why Choose Us</label>
+  <textarea name="why_choose_us" class="form-control" rows="3">{{ profile.why_choose_us }}</textarea></div>
+  <div class="mb-3"><label class="form-label">Motto</label>
+  <input type="text" name="motto" class="form-control" value="{{ profile.motto }}"></div>
+  <button type="submit" class="btn btn-primary">Save About Content</button>
+</form>
+{% include "admin/_layout_end.html" %}

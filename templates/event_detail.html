@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>{{ event.name }}</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb">
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('events') }}">Events</a></li>
+<li class="breadcrumb-item active">Detail</li>
+</ol></nav></div></section>
+<section class="section"><div class="container"><div class="row justify-content-center"><div class="col-lg-9">
+<span class="badge bg-{% if event.status=='upcoming' %}success{% elif event.status=='completed' %}secondary{% else %}warning{% endif %} mb-2">{{ event.status }}</span>
+{% if event.event_date %}
+<p class="text-muted mb-1"><i class="far fa-calendar me-1"></i>{{ event.event_date.strftime('%d %B %Y') }}
+{% if event.start_time %} · {{ event.start_time }}{% if event.end_time %} – {{ event.end_time }}{% endif %}{% endif %}
+</p>{% endif %}
+{% if event.venue %}<p class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ event.venue }}</p>{% endif %}
+{% if event.organizer %}<p class="text-muted small">Organizer: {{ event.organizer }}</p>{% endif %}
+
+{% if event.image_url %}
+<img src="{{ event.image_url }}" class="img-fluid rounded mb-4 w-100" alt="{{ event.name }}" style="max-height:420px;object-fit:cover">
+{% endif %}
+
+<div class="mb-4">{{ event.description|safe if event.description else '' }}</div>
+
+{% if event.registration_url %}
+<p><a href="{{ event.registration_url }}" class="btn btn-primary" target="_blank" rel="noopener">Register</a></p>
+{% endif %}
+
+{% if event.attachment_url %}
+{% set raw_url = event.attachment_url|fix_media_url %}
+{% set view_url = event.attachment_url|proxy_url %}
+{% set dl_url = event.attachment_url|proxy_url(true) %}
+{% set u = raw_url|lower %}
+{% set is_img = u.endswith('.jpg') or u.endswith('.jpeg') or u.endswith('.png') or u.endswith('.gif') or u.endswith('.webp') or u.endswith('.bmp') or u.endswith('.svg') or ('/image/upload/' in u and '.pdf' not in u) %}
+{% set is_video = u.endswith('.mp4') or u.endswith('.webm') or u.endswith('.mov') or u.endswith('.mkv') or u.endswith('.m4v') or u.endswith('.avi') or '/video/upload/' in u %}
+{% set is_audio = u.endswith('.mp3') or u.endswith('.wav') or u.endswith('.ogg') or u.endswith('.m4a') %}
+{% set is_office = u.endswith('.doc') or u.endswith('.docx') or u.endswith('.xls') or u.endswith('.xlsx') or u.endswith('.ppt') or u.endswith('.pptx') %}
+{% set is_text = u.endswith('.txt') or u.endswith('.csv') or u.endswith('.rtf') %}
+{% set is_archive = u.endswith('.zip') or u.endswith('.rar') or u.endswith('.7z') %}
+{% set is_pdf = u.endswith('.pdf') or 'pdf' in u or ('/raw/upload/' in u and not is_img and not is_video and not is_audio and not is_office and not is_text and not is_archive) %}
+<div class="mt-4 p-3 border rounded shadow-sm bg-white">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h5 class="mb-0"><i class="fas fa-paperclip me-1"></i> Attachment</h5>
+    <button type="button" class="btn btn-success btn-sm" id="btnDl" data-dl="{{ dl_url }}">
+      <i class="fas fa-download me-1"></i> Download
+    </button>
+  </div>
+
+  {% if is_img %}
+  <div class="text-center">
+    <img src="{{ view_url }}" alt="Attachment" class="img-fluid rounded" style="max-height:80vh;object-fit:contain">
+  </div>
+  {% elif is_video %}
+  <video src="{{ view_url }}" controls playsinline preload="metadata" class="w-100 rounded" style="max-height:80vh;background:#000"></video>
+  {% elif is_audio %}
+  <audio src="{{ view_url }}" controls class="w-100"></audio>
+  {% elif is_pdf %}
+  <div class="border rounded bg-light p-2">
+    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfPrev">‹ Prev</button>
+      <span class="small">Page <span id="pdfPage">1</span></span>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="pdfNext">Next ›</button>
+    </div>
+    <div class="text-center overflow-auto" style="max-height:85vh;min-height:320px;background:#525659">
+      <img id="pdfPageImg" src="{{ raw_url|pdf_page(1) }}" alt="PDF page" class="img-fluid" style="max-width:100%">
+    </div>
+  </div>
+  <script>
+  (function(){
+    var page = 1, maxTry = 30;
+    var img = document.getElementById('pdfPageImg');
+    var label = document.getElementById('pdfPage');
+    var base = {{ raw_url|tojson }};
+    function pageUrl(n) {
+      var u = base;
+      if (u.indexOf('/raw/upload/') >= 0) u = u.replace('/raw/upload/', '/image/upload/');
+      if (u.indexOf('/upload/') < 0) return u;
+      var parts = u.split('/upload/');
+      return parts[0] + '/upload/f_png,pg_' + n + ',w_900/' + parts[1];
+    }
+    function show(n) {
+      page = n; label.textContent = n;
+      img.onerror = function(){ if (n > 1) { page = n - 1; label.textContent = page; } };
+      img.src = pageUrl(n);
+    }
+    document.getElementById('pdfPrev').onclick = function(){ if (page > 1) show(page - 1); };
+    document.getElementById('pdfNext').onclick = function(){ if (page < maxTry) show(page + 1); };
+  })();
+  </script>
+  {% elif is_office or is_text %}
+  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
+    {% if u.endswith('.xls') or u.endswith('.xlsx') or u.endswith('.ppt') or u.endswith('.pptx') or u.endswith('.doc') or u.endswith('.docx') %}
+    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src={{ raw_url|urlencode }}"
+      title="Office" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+    {% else %}
+    <iframe src="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true"
+      title="Document" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+    {% endif %}
+  </div>
+  {% elif is_archive %}
+  <div class="text-center p-5 border rounded bg-light">
+    <i class="fas fa-file-archive fa-4x text-secondary mb-3"></i>
+    <p class="mb-0 text-muted">Archive — Download गरेर खोल्नुहोस्।</p>
+  </div>
+  {% else %}
+  <div class="border rounded overflow-hidden bg-light" style="height:85vh">
+    <iframe src="https://docs.google.com/gview?url={{ raw_url|urlencode }}&embedded=true"
+      title="File" class="w-100 h-100" style="border:0" allowfullscreen></iframe>
+  </div>
+  {% endif %}
+</div>
+<script>
+(function(){
+  var btn = document.getElementById('btnDl');
+  if (!btn) return;
+  btn.addEventListener('click', function(){
+    var href = btn.getAttribute('data-dl');
+    if (!href) return;
+    var a = document.createElement('a');
+    a.href = href; a.rel = 'noopener'; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+})();
+</script>
+{% endif %}
+
+<a href="{{ url_for('events') }}" class="btn btn-outline-secondary mt-4">← All Events</a>
+</div></div></div></section>
+{% endblock %}

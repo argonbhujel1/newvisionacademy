@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Teachers & Staff</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb justify-content-center">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Teachers</li>
+      </ol>
+    </nav>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Our Team</span>
+      <h2>Meet Our Teachers & Staff</h2>
+      <p>The dedicated team at {{ profile.school_name }}</p>
+    </div>
+    <div class="row g-4">
+      {% for t in teachers %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="card-modern teacher-card h-100 teacher-hover">
+          {% if t.photo_url %}
+          <img src="{{ t.photo_url }}" alt="{{ t.full_name }}" class="teacher-photo" loading="lazy"
+               onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div class="teacher-photo-placeholder" style="display:none"><i class="fas fa-user"></i></div>
+          {% else %}
+          <div class="teacher-photo-placeholder"><i class="fas fa-user"></i></div>
+          {% endif %}
+          <h6 class="mb-1">{{ t.full_name }}</h6>
+          <p class="text-secondary small mb-1 fw-semibold">{{ t.position }}</p>
+          {% if t.department %}<p class="text-muted small mb-0">{{ t.department }}</p>{% endif %}
+          {% if t.qualification %}<p class="small mt-1 mb-0">{{ t.qualification }}</p>{% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="col-12"><p class="text-center text-muted">Teacher profiles will be updated by the school administration.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner"><div class="container"><h1>Gallery</h1>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li><li class="breadcrumb-item active">Gallery</li></ol></nav></div></section>
+<section class="section"><div class="container">
+{% if categories %}
+<div class="text-center mb-4">
+<a href="{{ url_for('gallery') }}" class="btn btn-sm {% if not current_category %}btn-primary{% else %}btn-outline-primary{% endif %} me-1 mb-1">All</a>
+{% for c in categories %}
+<a href="{{ url_for('gallery', category=c) }}" class="btn btn-sm {% if current_category == c %}btn-primary{% else %}btn-outline-primary{% endif %} me-1 mb-1">{{ c }}</a>
+{% endfor %}
+</div>
+{% endif %}
+<div class="gallery-grid">
+{% for img in images %}
+<div class="gallery-item">
+<img src="{{ img.image_url }}" alt="{{ img.title or 'Gallery' }}" loading="lazy">
+<div class="overlay"><span>{{ img.title or img.category }}</span></div>
+</div>
+{% else %}
+<p class="text-center text-muted col-12">Gallery images will appear here once uploaded by the school.</p>
+{% endfor %}
+</div></div></section>
+{% endblock %}

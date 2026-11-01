@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>Vice Principal's Message</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Vice Principal</li>
+      </ol>
+    </nav>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    {% if coordinator %}
+    <div class="principal-card mx-auto">
+      <div class="principal-card-inner">
+        <div class="principal-photo-wrap">
+          {% if coordinator.photo_url %}
+          <img src="{{ coordinator.photo_url }}" alt="{{ coordinator.name or 'Vice Principal' }}" class="principal-photo" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='flex')">
+          <div class="principal-photo-placeholder" style="display:none"><i class="fas fa-user"></i></div>
+          {% else %}
+          <div class="principal-photo-placeholder"><i class="fas fa-user"></i></div>
+          {% endif %}
+        </div>
+        <div class="principal-body">
+          {% if coordinator.name %}<h4 class="mb-1">{{ coordinator.name }}</h4>{% endif %}
+          <p class="principal-role">{{ coordinator.designation or 'Vice Principal' }}</p>
+          {% for para in (coordinator.message or '').replace('\\n', '\n').split('\n') %}
+          {% if para.strip() %}<p class="principal-msg">{{ para.strip() }}</p>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-center text-muted">A message from the Vice Principal will be published here.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

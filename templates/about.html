@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>About Us</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb justify-content-center">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item active">About</li>
+      </ol>
+    </nav>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="row g-4 g-lg-5 align-items-start">
+      <div class="col-lg-8">
+        <h2 class="mb-3">About {{ profile.school_name }}</h2>
+        {% if profile.about_image_url %}
+        <div class="mb-4 rounded overflow-hidden shadow-sm">
+          <img src="{{ profile.about_image_url }}" alt="About {{ profile.school_name }}" class="w-100" style="max-height:360px;object-fit:cover" loading="lazy">
+        </div>
+        {% endif %}
+        {% set desc = (profile.description or '')|replace('\\n', '\n') %}
+        {% for para in desc.split('\n') %}
+          {% if para.strip() %}
+          <p>{{ para.strip() }}</p>
+          {% endif %}
+        {% endfor %}
+
+        <h3 class="mt-5 mb-3">Our Educational Levels</h3>
+        <p>The school provides education from ECD/Nursery through Grade 10:</p>
+        <div class="row">
+          <div class="col-6 col-md-4">
+            <ul class="mb-2">
+              <li>ECD / Nursery</li>
+              <li>Grade 1</li>
+              <li>Grade 2</li>
+              <li>Grade 3</li>
+            </ul>
+          </div>
+          <div class="col-6 col-md-4">
+            <ul class="mb-2">
+              <li>Grade 4</li>
+              <li>Grade 5</li>
+              <li>Grade 6</li>
+              <li>Grade 7</li>
+            </ul>
+          </div>
+          <div class="col-6 col-md-4">
+            <ul class="mb-2">
+              <li>Grade 8</li>
+              <li>Grade 9</li>
+              <li>Grade 10</li>
+            </ul>
+          </div>
+        </div>
+
+        {% if profile.history %}
+        <h3 class="mt-5 mb-3">Our Story</h3>
+        {% set hist = (profile.history or '')|replace('\\n', '\n') %}
+        {% for para in hist.split('\n') %}
+          {% if para.strip() %}
+          <p>{{ para.strip() }}</p>
+          {% endif %}
+        {% endfor %}
+        {% endif %}
+
+        <div class="row g-4 mt-3">
+          <div class="col-md-6">
+            <div class="card-modern p-4 h-100">
+              <h5 class="mb-3"><i class="fas fa-eye text-secondary me-2"></i>Vision</h5>
+              {% set vis = (profile.vision or '')|replace('\\n', '\n') %}
+              {% for para in vis.split('\n') %}
+                {% if para.strip() %}
+                <p class="mb-2">{{ para.strip() }}</p>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card-modern p-4 h-100">
+              <h5 class="mb-3"><i class="fas fa-bullseye text-secondary me-2"></i>Mission</h5>
+              {% set mis = (profile.mission or '')|replace('\\n', '\n') %}
+              {% for para in mis.split('\n') %}
+                {% if para.strip() %}
+                <p class="mb-2">{{ para.strip() }}</p>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        {% if profile.core_values %}
+        <h3 class="mt-5 mb-3">Our Core Values</h3>
+        <div class="row g-3">
+          {% set vals = (profile.core_values or '')|replace('\\n', '\n') %}
+          {% for line in vals.split('\n') %}
+            {% if line.strip() %}
+            <div class="col-md-6">
+              <div class="d-flex gap-2 align-items-start p-3 bg-light rounded h-100">
+                <i class="fas fa-check-circle text-secondary mt-1 flex-shrink-0"></i>
+                <span>{{ line.strip() }}</span>
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <h3 class="mt-5 mb-3">Our Location</h3>
+        <p class="mb-0">{{ profile.school_name }} is located at {{ profile.address }}.</p>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-modern p-4 mb-3">
+          <h5 class="mb-3">School Information</h5>
+          <ul class="list-unstyled mb-3">
+            <li class="mb-2"><strong>Type:</strong> {{ profile.school_type }}</li>
+            <li class="mb-2"><strong>Education:</strong> {{ profile.grades_text }}</li>
+            <li class="mb-2"><strong>Students:</strong> {{ profile.student_count }}+</li>
+            {% if profile.school_code %}<li class="mb-2"><strong>School Code:</strong> {{ profile.school_code }}</li>{% endif %}
+            <li class="mb-2"><strong>Session:</strong> {{ profile.admission_session }}</li>
+            <li class="mb-2"><strong>Municipality:</strong> {{ profile.municipality or 'Urlabari Municipality' }}</li>
+            <li class="mb-2"><strong>District:</strong> {{ profile.district or 'Morang' }}</li>
+            <li class="mb-2"><strong>Province:</strong> {{ profile.province or 'Koshi Province' }}</li>
+            <li class="mb-2"><strong>Address:</strong> {{ profile.address }}</li>
+            {% if profile.phone %}<li class="mb-2"><strong>Phone:</strong> <a href="tel:{{ profile.phone }}">{{ profile.phone }}</a></li>{% endif %}
+            {% if profile.email %}<li class="mb-2"><strong>Email:</strong> <a href="mailto:{{ profile.email }}">{{ profile.email }}</a></li>{% endif %}
+          </ul>
+          {% if profile.admission_open %}
+          <a href="{{ url_for('admission') }}" class="btn btn-cta w-100">Admission Open — {{ profile.admission_session }}</a>
+          {% endif %}
+        </div>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('principal_page') }}" class="btn btn-outline-primary">Principal's Message</a>
+          <a href="{{ url_for('coordinator_page') }}" class="btn btn-outline-primary">Vice Principal's Message</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

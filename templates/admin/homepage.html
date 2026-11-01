@@ -1,0 +1,17 @@
+{% include "admin/_layout_start.html" %}
+<h4 class="mb-4">Homepage Sections</h4>
+<form method="POST">
+<table class="table bg-white rounded">
+<thead><tr><th>Section</th><th>Enabled</th><th>Order</th></tr></thead>
+<tbody>
+{% for s in sections %}
+<tr>
+<td>{{ s.title }}</td>
+<td><input type="checkbox" name="enabled_{{ s.id }}" {% if s.is_enabled %}checked{% endif %}></td>
+<td><input type="number" name="order_{{ s.id }}" value="{{ s.sort_order }}" class="form-control form-control-sm" style="width:80px"></td>
+</tr>
+{% endfor %}
+</tbody></table>
+<button type="submit" class="btn btn-primary">Save Order</button>
+</form>
+{% include "admin/_layout_end.html" %}
